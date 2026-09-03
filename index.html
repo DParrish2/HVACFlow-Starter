@@ -1,16 +1,69 @@
-# HVACFlow
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HVACFlow</title>
 
-HVACFlow is a simple tool designed to help HVAC professionals manage their work more efficiently.
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-## Project Status
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-MVP development in progress.
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+    }
 
-## Planned Features
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
 
-- HVAC job management
-- Customer information
-- Estimates and invoices
-- Payment integration
-- Simple dashboard
-- Mobile-friendly design
+    .app {
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: #0d47a1;
+      color: white;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .brand span {
+      color: #6ec6ff;
+    }
+
+    .topbar small {
+      opacity: 0.85;
+    }
+
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 72px);
+    }
+
+    .sidebar {
+      width: 230px;
+      background: #102a43;
+      padding: 20px 12px;
+      color: white;
+    }
+
+    .nav-btn
