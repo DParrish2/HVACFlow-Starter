@@ -66,4 +66,1126 @@
       color: white;
     }
 
-    .nav-btn
+    .nav-btn {
+      display: block;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #d9e2ec;
+      text-align: left;
+      padding: 13px 14px;
+      border-radius: 8px;
+      margin-bottom: 7px;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      background: #1d4f7a;
+      color: white;
+    }
+
+    .main {
+      flex: 1;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .page-title {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .page-subtitle {
+      color: #64748b;
+      margin-bottom: 22px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .stat-card,
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-label {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .stat-number {
+      font-size: 30px;
+      font-weight: 700;
+      color: #0d47a1;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .card h3 {
+      margin-bottom: 14px;
+    }
+
+    .activity-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: #0d47a1;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0a3a84;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #1f2937;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th,
+    td {
+      padding: 14px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .empty {
+      text-align: center;
+      color: #64748b;
+      padding: 35px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 1000;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 620px;
+      background: white;
+      border-radius: 14px;
+      padding: 22px;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .close-btn {
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      cursor: pointer;
+      color: #64748b;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      outline: none;
+      background: white;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #0d47a1;
+      box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.1);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .message {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .message.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .message.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .setup-warning {
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+    }
+
+    .coming-soon {
+      padding: 35px;
+      text-align: center;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      color: #64748b;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        display: block;
+      }
+
+      .sidebar {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        padding: 10px;
+      }
+
+      .nav-btn {
+        width: auto;
+        white-space: nowrap;
+        margin-right: 6px;
+        margin-bottom: 0;
+      }
+
+      .main {
+        padding: 16px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        padding: 15px;
+      }
+
+      .brand {
+        font-size: 21px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 14px;
+      }
+
+      .stat-number {
+        font-size: 25px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full {
+        grid-column: auto;
+      }
+
+      .page-title {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <header class="topbar">
+      <div>
+        <div class="brand">HVAC<span>Flow</span></div>
+        <small>Contractor Dashboard</small>
+      </div>
+      <div>Solo HVAC Business</div>
+    </header>
+
+    <div class="layout">
+
+      <aside class="sidebar">
+        <button class="nav-btn active" data-page="dashboard">
+          Dashboard
+        </button>
+
+        <button class="nav-btn" data-page="customers">
+          Customers
+        </button>
+
+        <button class="nav-btn" data-page="leads">
+          Leads
+        </button>
+
+        <button class="nav-btn" data-page="jobs">
+          Jobs
+        </button>
+
+        <button class="nav-btn" data-page="estimates">
+          Estimates
+        </button>
+
+        <button class="nav-btn" data-page="appointments">
+          Appointments
+        </button>
+
+        <button class="nav-btn" data-page="payments">
+          Payments
+        </button>
+      </aside>
+
+      <main class="main">
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="page active">
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">
+            Run your HVAC business from one place.
+          </p>
+
+          <div class="stats">
+            <div class="stat-card">
+              <div class="stat-label">Customers</div>
+              <div class="stat-number" id="customerCount">0</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">New Leads</div>
+              <div class="stat-number">0</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Appointments</div>
+              <div class="stat-number">0</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Open Estimates</div>
+              <div class="stat-number">$0</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+
+            <div class="card">
+              <h3>Recent Customers</h3>
+              <div id="recentCustomers">
+                <div class="activity-item">
+                  No customers loaded yet.
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Automation Activity</h3>
+
+              <div class="activity-item">
+                Customer database connected through Supabase.
+              </div>
+
+              <div class="activity-item">
+                Lead follow-up automation coming next.
+              </div>
+
+              <div class="activity-item">
+                Stripe payment integration coming next.
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- CUSTOMERS -->
+        <section id="customers" class="page">
+          <div class="toolbar">
+            <div>
+              <h1 class="page-title">Customers</h1>
+              <p class="page-subtitle">
+                Your real HVAC customer database.
+              </p>
+            </div>
+
+            <button class="btn btn-primary" id="openCustomerModal">
+              + Add Customer
+            </button>
+          </div>
+
+          <div id="customerMessage" class="message"></div>
+
+          <div id="setupWarning" class="setup-warning">
+            Supabase still needs your Project URL and anon/public key inserted
+            near the bottom of this file.
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>Address</th>
+                  <th>Notes</th>
+                  <th>Added</th>
+                </tr>
+              </thead>
+
+              <tbody id="customerTableBody">
+                <tr>
+                  <td colspan="6" class="empty">
+                    Loading customers...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- LEADS -->
+        <section id="leads" class="page">
+          <h1 class="page-title">Leads</h1>
+          <p class="page-subtitle">
+            Track new service requests and sales opportunities.
+          </p>
+          <div class="coming-soon">
+            Real lead management is the next module to connect.
+          </div>
+        </section>
+
+        <!-- JOBS -->
+        <section id="jobs" class="page">
+          <h1 class="page-title">Jobs</h1>
+          <p class="page-subtitle">
+            Manage active HVAC service and installation jobs.
+          </p>
+          <div class="coming-soon">
+            Job management is ready to be connected to Supabase next.
+          </div>
+        </section>
+
+        <!-- ESTIMATES -->
+        <section id="estimates" class="page">
+          <h1 class="page-title">Estimates</h1>
+          <p class="page-subtitle">
+            Create and track HVAC estimates.
+          </p>
+          <div class="coming-soon">
+            Estimate creation will be added after customers and jobs.
+          </div>
+        </section>
+
+        <!-- APPOINTMENTS -->
+        <section id="appointments" class="page">
+          <h1 class="page-title">Appointments</h1>
+          <p class="page-subtitle">
+            Schedule service calls and installations.
+          </p>
+          <div class="coming-soon">
+            Scheduling will be connected to real customer jobs.
+          </div>
+        </section>
+
+        <!-- PAYMENTS -->
+        <section id="payments" class="page">
+          <h1 class="page-title">Payments</h1>
+          <p class="page-subtitle">
+            Collect customer payments securely.
+          </p>
+          <div class="coming-soon">
+            Stripe payment integration will be connected here.
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ADD CUSTOMER MODAL -->
+  <div class="modal" id="customerModal">
+    <div class="modal-box">
+
+      <div class="modal-header">
+        <h2>Add Customer</h2>
+        <button class="close-btn" id="closeCustomerModal">
+          &times;
+        </button>
+      </div>
+
+      <form id="customerForm">
+
+        <div class="form-grid">
+
+          <div class="form-group full">
+            <label for="customerName">Customer Name *</label>
+            <input
+              type="text"
+              id="customerName"
+              required
+              placeholder="John Smith"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customerPhone">Phone</label>
+            <input
+              type="tel"
+              id="customerPhone"
+              placeholder="555-555-5555"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customerEmail">Email</label>
+            <input
+              type="email"
+              id="customerEmail"
+              placeholder="john@email.com"
+            />
+          </div>
+
+          <div class="form-group full">
+            <label for="customerAddress">Street Address</label>
+            <input
+              type="text"
+              id="customerAddress"
+              placeholder="123 Main Street"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customerCity">City</label>
+            <input
+              type="text"
+              id="customerCity"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customerState">State</label>
+            <input
+              type="text"
+              id="customerState"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="customerZip">ZIP Code</label>
+            <input
+              type="text"
+              id="customerZip"
+            />
+          </div>
+
+          <div class="form-group full">
+            <label for="customerNotes">Notes</label>
+            <textarea
+              id="customerNotes"
+              placeholder="Equipment, service history, gate code, special instructions..."
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="cancelCustomer"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            id="saveCustomerBtn"
+          >
+            Save Customer
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /*
+      =====================================================
+      SUPABASE CONNECTION
+      =====================================================
+
+      We will replace these two values with the real
+      Supabase Project URL and anon/public key.
+
+      DO NOT put your service_role secret key here.
+    */
+
+    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+
+    const supabaseConfigured =
+      !SUPABASE_URL.includes("PASTE_") &&
+      !SUPABASE_ANON_KEY.includes("PASTE_");
+
+    let db = null;
+
+    if (supabaseConfigured) {
+      db = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+    }
+
+    /*
+      =====================================================
+      NAVIGATION
+      =====================================================
+    */
+
+    const navButtons = document.querySelectorAll(".nav-btn");
+    const pages = document.querySelectorAll(".page");
+
+    navButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+
+        navButtons.forEach((btn) => {
+          btn.classList.remove("active");
+        });
+
+        pages.forEach((page) => {
+          page.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        const pageId = button.dataset.page;
+
+        document
+          .getElementById(pageId)
+          .classList.add("active");
+
+        if (pageId === "customers") {
+          loadCustomers();
+        }
+      });
+    });
+
+    /*
+      =====================================================
+      MODAL
+      =====================================================
+    */
+
+    const customerModal =
+      document.getElementById("customerModal");
+
+    const openCustomerModal =
+      document.getElementById("openCustomerModal");
+
+    const closeCustomerModal =
+      document.getElementById("closeCustomerModal");
+
+    const cancelCustomer =
+      document.getElementById("cancelCustomer");
+
+    openCustomerModal.addEventListener("click", () => {
+      customerModal.classList.add("open");
+    });
+
+    function closeModal() {
+      customerModal.classList.remove("open");
+    }
+
+    closeCustomerModal.addEventListener(
+      "click",
+      closeModal
+    );
+
+    cancelCustomer.addEventListener(
+      "click",
+      closeModal
+    );
+
+    customerModal.addEventListener("click", (event) => {
+      if (event.target === customerModal) {
+        closeModal();
+      }
+    });
+
+    /*
+      =====================================================
+      MESSAGES
+      =====================================================
+    */
+
+    function showMessage(text, type) {
+      const box =
+        document.getElementById("customerMessage");
+
+      box.textContent = text;
+      box.className = "message " + type;
+
+      setTimeout(() => {
+        box.className = "message";
+      }, 5000);
+    }
+
+    /*
+      =====================================================
+      ADD CUSTOMER
+      =====================================================
+    */
+
+    const customerForm =
+      document.getElementById("customerForm");
+
+    customerForm.addEventListener(
+      "submit",
+      async (event) => {
+
+        event.preventDefault();
+
+        if (!supabaseConfigured || !db) {
+          showMessage(
+            "Supabase is not connected yet. We need to insert your Project URL and anon key.",
+            "error"
+          );
+
+          return;
+        }
+
+        const saveButton =
+          document.getElementById("saveCustomerBtn");
+
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
+
+        const customer = {
+          name:
+            document
+              .getElementById("customerName")
+              .value
+              .trim(),
+
+          phone:
+            document
+              .getElementById("customerPhone")
+              .value
+              .trim(),
+
+          email:
+            document
+              .getElementById("customerEmail")
+              .value
+              .trim(),
+
+          address:
+            document
+              .getElementById("customerAddress")
+              .value
+              .trim(),
+
+          city:
+            document
+              .getElementById("customerCity")
+              .value
+              .trim(),
+
+          state:
+            document
+              .getElementById("customerState")
+              .value
+              .trim(),
+
+          zip_code:
+            document
+              .getElementById("customerZip")
+              .value
+              .trim(),
+
+          notes:
+            document
+              .getElementById("customerNotes")
+              .value
+              .trim()
+        };
+
+        const { error } = await db
+          .from("Customers")
+          .insert([customer]);
+
+        saveButton.disabled = false;
+        saveButton.textContent = "Save Customer";
+
+        if (error) {
+          console.error(error);
+
+          showMessage(
+            "Customer could not be saved: " +
+              error.message,
+            "error"
+          );
+
+          return;
+        }
+
+        customerForm.reset();
+        closeModal();
+
+        showMessage(
+          "Customer saved successfully.",
+          "success"
+        );
+
+        await loadCustomers();
+      }
+    );
+
+    /*
+      =====================================================
+      LOAD CUSTOMERS
+      =====================================================
+    */
+
+    async function loadCustomers() {
+
+      const tableBody =
+        document.getElementById("customerTableBody");
+
+      const setupWarning =
+        document.getElementById("setupWarning");
+
+      if (!supabaseConfigured || !db) {
+
+        setupWarning.style.display = "block";
+
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty">
+              Supabase connection information still needs to be added.
+            </td>
+          </tr>
+        `;
+
+        return;
+      }
+
+      setupWarning.style.display = "none";
+
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty">
+            Loading customers...
+          </td>
+        </tr>
+      `;
+
+      const { data, error } = await db
+        .from("Customers")
+        .select("*")
+        .order("created_at", {
+          ascending: false
+        });
+
+      if (error) {
+        console.error(error);
+
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty">
+              Error loading customers:
+              ${escapeHtml(error.message)}
+            </td>
+          </tr>
+        `;
+
+        return;
+      }
+
+      const customers = data || [];
+
+      document.getElementById(
+        "customerCount"
+      ).textContent = customers.length;
+
+      if (customers.length === 0) {
+
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty">
+              No customers yet. Tap Add Customer to create your first customer.
+            </td>
+          </tr>
+        `;
+
+      } else {
+
+        tableBody.innerHTML =
+          customers
+            .map((customer) => {
+
+              const fullAddress = [
+                customer.address,
+                customer.city,
+                customer.state,
+                customer.zip_code
+              ]
+                .filter(Boolean)
+                .join(", ");
+
+              return `
+                <tr>
+                  <td>
+                    <strong>
+                      ${escapeHtml(customer.name || "")}
+                    </strong>
+                  </td>
+
+                  <td>
+                    ${escapeHtml(customer.phone || "—")}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(customer.email || "—")}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(fullAddress || "—")}
+                  </td>
+
+                  <td>
+                    ${escapeHtml(customer.notes || "—")}
+                  </td>
+
+                  <td>
+                    ${formatDate(customer.created_at)}
+                  </td>
+                </tr>
+              `;
+            })
+            .join("");
+      }
+
+      renderRecentCustomers(customers);
+    }
+
+    /*
+      =====================================================
+      DASHBOARD RECENT CUSTOMERS
+      =====================================================
+    */
+
+    function renderRecentCustomers(customers) {
+
+      const container =
+        document.getElementById("recentCustomers");
+
+      if (!customers.length) {
+
+        container.innerHTML = `
+          <div class="activity-item">
+            No customers yet.
+          </div>
+        `;
+
+        return;
+      }
+
+      container.innerHTML =
+        customers
+          .slice(0, 5)
+          .map((customer) => `
+            <div class="activity-item">
+              <strong>
+                ${escapeHtml(customer.name || "Customer")}
+              </strong>
+              <br />
+              <small>
+                ${escapeHtml(
+                  customer.phone ||
+                  customer.email ||
+                  "Customer record"
+                )}
+              </small>
+            </div>
+          `)
+          .join("");
+    }
+
+    /*
+      =====================================================
+      HELPERS
+      =====================================================
+    */
+
+    function formatDate(value) {
+
+      if (!value) {
+        return "—";
+      }
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "—";
+      }
+
+      return date.toLocaleDateString();
+    }
+
+    function escapeHtml(value) {
+
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    /*
+      =====================================================
+      START APP
+      =====================================================
+    */
+
+    loadCustomers();
+  </script>
+
+</body>
+</html>
