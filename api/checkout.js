@@ -29,7 +29,6 @@ module.exports = async function checkout(req, res) {
   params.set('success_url', `${origin}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
   params.set('cancel_url', `${origin}/?checkout=cancelled`);
   params.set('allow_promotion_codes', 'true');
-  params.set('integration_identifier', 'hvacflow_checkout_qxnrptaz');
   if (email) params.set('customer_email', String(email).slice(0, 254));
   if (userId) params.set('client_reference_id', String(userId).slice(0, 200));
   params.set('metadata[plan]', plan);
