@@ -18,7 +18,6 @@ module.exports = async function checkout(req, res) {
   const { type, plan, email, userId, customer, amount } = req.body || {};
   const origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
   const params = new URLSearchParams();
-  params.set('integration_identifier', 'hvacflow_checkout_qmtzjkra');
 
   if (type === 'customer_payment') {
     const amountCents = Math.round(Number(amount) * 100);
@@ -64,7 +63,6 @@ module.exports = async function checkout(req, res) {
       headers: {
         Authorization: `Bearer ${secretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Stripe-Version': '2026-07-29.dahlia',
       },
       body: params,
     });
