@@ -1,7 +1,13 @@
-const PRICE_IDS = {
+const LIVE_PRICE_IDS = {
   starter: 'price_1UClfwRzvI2im2M050ltFOac',
   professional: 'price_1UClfxRzvI2im2M0iFYPmAsi',
   business: 'price_1UClfyRzvI2im2M02XxWncbd',
+};
+
+const TEST_PRICE_IDS = {
+  starter: 'price_1UDDxbRzvI2im2M0R8H80jXs',
+  professional: 'price_1UDDxcRzvI2im2M0uGGDCipB',
+  business: 'price_1UDDxdRzvI2im2M0orTHwQLN',
 };
 
 module.exports = async function checkout(req, res) {
@@ -38,7 +44,8 @@ module.exports = async function checkout(req, res) {
     params.set('metadata[payment_type]', 'customer_payment');
     params.set('metadata[customer_name]', customerName);
   } else {
-    const price = PRICE_IDS[plan];
+    const priceIds = secretKey.startsWith('sk_test_') ? TEST_PRICE_IDS : LIVE_PRICE_IDS;
+    const price = priceIds[plan];
     if (!price) {
       return res.status(400).json({ error: 'Choose a valid HVACFlow plan.' });
     }
