@@ -24,6 +24,7 @@ module.exports = async function checkout(req, res) {
   const { type, plan, email, userId, customer, amount } = req.body || {};
   const origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
   const params = new URLSearchParams();
+  params.set('managed_payments[enabled]', 'false');
 
   if (type === 'customer_payment') {
     const amountCents = Math.round(Number(amount) * 100);
