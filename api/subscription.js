@@ -1,6 +1,7 @@
 const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
+const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com']);
 
 async function getAuthenticatedUser(req) {
   const auth = String(req.headers.authorization || '');
@@ -66,11 +67,6 @@ module.exports = async function subscription(req, res) {
     return res.status(405).json({ error: 'Method not allowed.' });
   }
 
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    return res.status(500).json({ error: 'Stripe is not configured yet.' });
-  }
-
   let user;
   try {
     user = await getAuthenticatedUser(req);
@@ -80,6 +76,15 @@ module.exports = async function subscription(req, res) {
   }
   if (!user?.id || !user?.email) {
     return res.status(401).json({ error: 'Please sign in again.' });
+  }
+
+  if (TEST_ACCOUNT_EMAILS.has(String(user.email).toLowerCase())) {
+    return res.status(200).json({ active: true, status: 'test_account', plan: 'business', test_account: true });
+  }
+
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    return res.status(500).json({ error: 'Stripe is not configured yet.' });
   }
 
   try {
