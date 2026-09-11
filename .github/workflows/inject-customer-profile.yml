@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - customer-profile.js
+      - customer-linking.js
       - .github/workflows/inject-customer-profile.yml
   workflow_dispatch:
 
@@ -16,16 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add customer profile script to index
+      - name: Add customer profile scripts to index
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           text = p.read_text()
-          tag = '<script src="/customer-profile.js"></script>'
-          if tag not in text:
-              text = text.replace('</body>', tag + '\n</body>')
+          tags = [
+              '<script src="/customer-profile.js"></script>',
+              '<script src="/customer-linking.js"></script>',
+          ]
+          changed = False
+          for tag in tags:
+              if tag not in text:
+                  text = text.replace('</body>', tag + '\n</body>')
+                  changed = True
+          if changed:
               p.write_text(text)
           PY
       - name: Commit production wiring
@@ -38,5 +46,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Load customer profile navigation"
+          git commit -m "Load customer profile navigation and linking"
           git push
