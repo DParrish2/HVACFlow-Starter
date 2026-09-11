@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
-const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com']);
+const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com','shedtoshelf@gmail.com']);
 
 async function getAuthenticatedUser(req) {
   const auth = String(req.headers.authorization || '');
