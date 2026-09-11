@@ -7,6 +7,7 @@ on:
       - customer-profile.js
       - customer-linking.js
       - customer-contact-history.js
+      - dialable-phones.js
       - address-maps.js
       - team-members.js
       - team-plan-gate.js
@@ -36,6 +37,7 @@ jobs:
               '<script src="/customer-profile.js"></script>',
               '<script src="/customer-linking.js"></script>',
               '<script src="/customer-contact-history.js"></script>',
+              '<script src="/dialable-phones.js"></script>',
               '<script src="/address-maps.js"></script>',
               '<script src="/team-members.js"></script>',
               '<script src="/team-plan-gate.js"></script>',
@@ -62,5 +64,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Load HVACFlow customer, team, plans, leads, job, contact, and login helpers"
+          git commit -m "Load HVACFlow customer, team, plans, leads, job, contact, phone, and login helpers"
           git push
