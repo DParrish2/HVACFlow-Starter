@@ -1,8 +1,20 @@
 const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const EXTRA_SEAT_PRICE_ID = 'price_1UEQxXRzvI2im2M0FROnmKZn';
-const BUSINESS_PRICE_IDS = new Set(['price_1UClfyRzvI2im2M02XxWncbd','price_1UDDxdRzvI2im2M0orTHwQLN']);
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active','trialing']);
+const PLAN_BY_PRICE = {
+  price_1UEdXZRzvI2im2M0SgEbVpRS:'starter',
+  price_1UEdboRzvI2im2M0NqEktGrG:'professional',
+  price_1UEdb0RzvI2im2M0srFI6gfc:'business',
+  price_1UClfwRzvI2im2M050ltFOac:'starter',
+  price_1UClfxRzvI2im2M0iFYPmAsi:'professional',
+  price_1UClfyRzvI2im2M02XxWncbd:'business',
+  price_1UDDxbRzvI2im2M0R8H80jXs:'starter',
+  price_1UDDxcRzvI2im2M0uGGDCipB:'professional',
+  price_1UDDxdRzvI2im2M0orTHwQLN:'business',
+};
+const PLAN_LIMITS={starter:1,professional:5,business:15};
+const MAX_EXTRA_SEATS={starter:3,professional:4,business:200};
 
 function bearerFrom(req){
   const auth=String(req.headers.authorization||'');
@@ -54,6 +66,14 @@ async function findSubscription(secretKey,email){
   return null;
 }
 
+function basePlanFromSubscription(subscription){
+  for(const item of subscription.items?.data||[]){
+    const plan=PLAN_BY_PRICE[item.price?.id];
+    if(plan) return plan;
+  }
+  return null;
+}
+
 module.exports=async function teamSeats(req,res){
   if(req.method!=='POST'){
     res.setHeader('Allow','POST');
@@ -61,7 +81,8 @@ module.exports=async function teamSeats(req,res){
   }
   const token=bearerFrom(req);
   if(!token) return res.status(401).json({error:'Please sign in again.'});
-  const extraSeats=Math.max(0,Math.min(200,Number.parseInt(req.body?.extra_seats,10)||0));
+  const requested=Number.parseInt(req.body?.extra_seats,10);
+  if(!Number.isInteger(requested)||requested<0) return res.status(400).json({error:'Enter a valid number of extra seats.'});
   const secretKey=process.env.STRIPE_SECRET_KEY;
   if(!secretKey) return res.status(500).json({error:'Stripe is not configured yet.'});
   if(secretKey.startsWith('sk_test_')) return res.status(400).json({error:'Extra-seat billing is configured for live mode only.'});
@@ -74,20 +95,36 @@ module.exports=async function teamSeats(req,res){
 
     const subscription=await findSubscription(secretKey,String(identity.owner_email||'').toLowerCase());
     if(!subscription) return res.status(403).json({error:'An active HVACFlow subscription is required.'});
-    const businessItem=(subscription.items?.data||[]).find(i=>BUSINESS_PRICE_IDS.has(i.price?.id));
-    if(!businessItem) return res.status(400).json({error:'Additional seats are available on the Business plan.'});
-    const seatItem=(subscription.items?.data||[]).find(i=>i.price?.id===EXTRA_SEAT_PRICE_ID);
+    const plan=basePlanFromSubscription(subscription);
+    if(!plan) return res.status(400).json({error:'The active HVACFlow plan could not be identified.'});
 
-    if(extraSeats===0 && seatItem){
-      await stripeRequest(secretKey,`subscription_items/${seatItem.id}`,{method:'DELETE',params:{proration_behavior:'create_prorations'}});
-    }else if(extraSeats>0 && seatItem){
-      await stripeRequest(secretKey,`subscription_items/${seatItem.id}`,{method:'POST',params:{quantity:extraSeats,proration_behavior:'create_prorations'}});
-    }else if(extraSeats>0){
-      await stripeRequest(secretKey,'subscription_items',{method:'POST',params:{subscription:subscription.id,price:EXTRA_SEAT_PRICE_ID,quantity:extraSeats,proration_behavior:'create_prorations'}});
+    const maxExtra=MAX_EXTRA_SEATS[plan];
+    if(requested>maxExtra){
+      if(plan==='starter') return res.status(400).json({error:'Starter supports up to 4 total users. Upgrade to Professional for 5 or more users.'});
+      if(plan==='professional') return res.status(400).json({error:'Professional supports up to 9 total users. Upgrade to Business at 10 users for the same monthly price and 15 included users.'});
+      return res.status(400).json({error:'The requested seat quantity is too high.'});
     }
 
-    await patchCompany(token,identity.company_id,{subscription_plan:'business',included_user_limit:15,extra_user_limit:extraSeats});
-    return res.status(200).json({ok:true,extra_seats:extraSeats,total_seats:15+extraSeats,monthly_extra_cost:extraSeats*8});
+    const seatItem=(subscription.items?.data||[]).find(i=>i.price?.id===EXTRA_SEAT_PRICE_ID);
+    if(requested===0 && seatItem){
+      await stripeRequest(secretKey,`subscription_items/${seatItem.id}`,{method:'DELETE',params:{proration_behavior:'create_prorations'}});
+    }else if(requested>0 && seatItem){
+      await stripeRequest(secretKey,`subscription_items/${seatItem.id}`,{method:'POST',params:{quantity:requested,proration_behavior:'create_prorations'}});
+    }else if(requested>0){
+      await stripeRequest(secretKey,'subscription_items',{method:'POST',params:{subscription:subscription.id,price:EXTRA_SEAT_PRICE_ID,quantity:requested,proration_behavior:'create_prorations'}});
+    }
+
+    const included=PLAN_LIMITS[plan];
+    await patchCompany(token,identity.company_id,{subscription_plan:plan,included_user_limit:included,extra_user_limit:requested});
+    return res.status(200).json({
+      ok:true,
+      plan,
+      included_seats:included,
+      extra_seats:requested,
+      total_seats:included+requested,
+      monthly_extra_cost:requested*8,
+      upgrade_recommended:(plan==='starter'&&included+requested>=4)?'professional':(plan==='professional'&&included+requested>=9)?'business':null,
+    });
   }catch(error){
     console.error('Team seat update failed',error.message);
     return res.status(400).json({error:error.message||'Seat capacity could not be updated.'});
