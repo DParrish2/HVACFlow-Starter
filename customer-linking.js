@@ -1,176 +1,48 @@
 (() => {
-  const TABLES = ['Jobs','Leads','Estimates','Appointments','Payments'];
-  let customerCache = [];
-  let customerCacheAt = 0;
-
-  function normEmail(v){ return String(v||'').trim().toLowerCase(); }
-  function normPhone(v){ return String(v||'').replace(/\D/g,''); }
-  function normName(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
+  const TABLES=['Jobs','Leads','Estimates','Appointments','Payments'];
+  let customerCache=[],customerCacheAt=0;
+  const normEmail=v=>String(v||'').trim().toLowerCase();
+  const normPhone=v=>String(v||'').replace(/\D/g,'');
+  const normName=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
 
   function ensureContactFields(){
-    const add = (table) => {
-      if(typeof modules==='undefined' || !modules?.[table]) return;
-      const names = new Set(modules[table].fields.map(f=>f[0]));
-      const insertAt = Math.min(1, modules[table].fields.length);
-      const extra = [];
-      if(!names.has('phone')) extra.push(['phone','Phone','tel']);
-      if(!names.has('email')) extra.push(['email','Email','email']);
-      if(extra.length) modules[table].fields.splice(insertAt,0,...extra);
-    };
+    const add=table=>{if(typeof modules==='undefined'||!modules?.[table])return;const names=new Set(modules[table].fields.map(f=>f[0]));const extra=[];if(!names.has('phone'))extra.push(['phone','Phone','tel']);if(!names.has('email'))extra.push(['email','Email','email']);if(extra.length)modules[table].fields.splice(Math.min(1,modules[table].fields.length),0,...extra)};
     ['Jobs','Estimates','Appointments','Payments'].forEach(add);
   }
+  async function getCustomers(force=false){if(!force&&customerCache.length&&Date.now()-customerCacheAt<30000)return customerCache;const {data,error}=await sb.from('Customers').select('id,name,phone,email');if(error)throw error;customerCache=data||[];customerCacheAt=Date.now();return customerCache}
+  function findContactMatch(r,cs){const e=normEmail(r.email),p=normPhone(r.phone);if(e){const c=cs.find(x=>normEmail(x.email)===e);if(c)return{customer:c,reason:'email'}}if(p){const c=cs.find(x=>normPhone(x.phone)===p);if(c)return{customer:c,reason:'phone'}}return null}
+  function findUniqueNameMatch(r,cs){const n=normName(r.customer_name);if(!n)return null;const m=cs.filter(c=>normName(c.name)===n);return m.length===1?{customer:m[0],reason:'name'}:null}
+  function resolveCustomer(r,cs){if(r.customer_id){const c=cs.find(x=>String(x.id)===String(r.customer_id));if(c)return{customer:c,reason:'linked'}}return findContactMatch(r,cs)||findUniqueNameMatch(r,cs)}
+  function goToModule(table){const id=table.toLowerCase(),btn=document.querySelector(`#nav button[data-page="${id}"]`);if(btn){btn.click();return}document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id)?.classList.add('active')}
 
-  async function getCustomers(force=false){
-    if(!force && customerCache.length && Date.now()-customerCacheAt < 30000) return customerCache;
-    const {data,error}=await sb.from('Customers').select('id,name,phone,email');
-    if(error) throw error;
-    customerCache=data||[]; customerCacheAt=Date.now();
-    return customerCache;
-  }
-
-  function findContactMatch(record, customers){
-    const e=normEmail(record.email), p=normPhone(record.phone);
-    if(e){ const byEmail=customers.find(c=>normEmail(c.email)===e); if(byEmail) return {customer:byEmail,reason:'email'}; }
-    if(p){ const byPhone=customers.find(c=>normPhone(c.phone)===p); if(byPhone) return {customer:byPhone,reason:'phone'}; }
-    return null;
-  }
-
-  function findUniqueNameMatch(record,customers){
-    const n=normName(record.customer_name);
-    if(!n) return null;
-    const matches=customers.filter(c=>normName(c.name)===n);
-    return matches.length===1?{customer:matches[0],reason:'name'}:null;
-  }
-
-  function resolveCustomer(record,customers){
-    if(record.customer_id){
-      const byId=customers.find(c=>String(c.id)===String(record.customer_id));
-      if(byId) return {customer:byId,reason:'linked'};
-    }
-    return findContactMatch(record,customers)||findUniqueNameMatch(record,customers);
-  }
-
-  function goToModule(table){
-    const id=table.toLowerCase();
-    const btn=document.querySelector(`#nav button[data-page="${id}"]`);
-    if(btn){ btn.click(); return; }
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.getElementById(id)?.classList.add('active');
-  }
-
+  // Open the profile directly. The old implementation first reloaded Customers and
+  // tried to simulate a click on a table row, which could fail after leaving Appointments.
   async function openProfile(customerId){
-    if(typeof loadModule==='function') await loadModule('Customers');
+    if(typeof window.openCustomerProfile==='function'){await window.openCustomerProfile(customerId);return}
+    if(typeof openCustomerProfile==='function'){await openCustomerProfile(customerId);return}
+    if(typeof loadModule==='function')await loadModule('Customers');
     const row=[...document.querySelectorAll('#bodyCustomers tr')].find(r=>r.querySelector('.del')?.dataset.id===String(customerId));
-    if(row){ row.querySelector('td:first-child')?.click(); return; }
-    const btn=document.querySelector('#nav button[data-page="customers"]');
-    if(btn) btn.click();
+    if(row){row.querySelector('td:first-child')?.click();return}
+    goToModule('Customers');
   }
 
-  async function mergeRecord(table, record, customer){
-    const updates={customer_id:customer.id,customer_name:customer.name};
-    const {error}=await sb.from(table).update(updates).eq('id',record.id);
-    if(error){ alert(error.message); return; }
-    const customerUpdates={};
-    if(!customer.phone && record.phone) customerUpdates.phone=record.phone;
-    if(!customer.email && record.email) customerUpdates.email=record.email;
-    if(Object.keys(customerUpdates).length) await sb.from('Customers').update(customerUpdates).eq('id',customer.id);
-    customerCacheAt=0;
-    if(typeof loadModule==='function') await loadModule(table);
-    if(typeof loadDashboard==='function') await loadDashboard();
-  }
-
-  function makeProfileLink(cell,customer){
-    if(!cell||!customer) return;
-    cell.style.color='#0d47a1';
-    cell.style.fontWeight='700';
-    cell.style.cursor='pointer';
-    cell.style.textDecoration='underline';
-    cell.style.textUnderlineOffset='2px';
-    cell.title='Open customer profile';
-    if(cell.dataset.profileCustomerId===String(customer.id)) return;
-    cell.dataset.profileCustomerId=String(customer.id);
-    cell.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openProfile(customer.id);});
-  }
+  async function mergeRecord(table,record,customer){const {error}=await sb.from(table).update({customer_id:customer.id,customer_name:customer.name}).eq('id',record.id);if(error){alert(error.message);return}const u={};if(!customer.phone&&record.phone)u.phone=record.phone;if(!customer.email&&record.email)u.email=record.email;if(Object.keys(u).length)await sb.from('Customers').update(u).eq('id',customer.id);customerCacheAt=0;if(typeof loadModule==='function')await loadModule(table);if(typeof loadDashboard==='function')await loadDashboard()}
+  function makeProfileLink(cell,customer){if(!cell||!customer)return;cell.style.color='#0d47a1';cell.style.fontWeight='700';cell.style.cursor='pointer';cell.style.textDecoration='underline';cell.style.textUnderlineOffset='2px';cell.title='Open customer profile';cell.dataset.customerProfileId=String(customer.id)}
 
   async function decorateTable(table){
-    const body=document.getElementById('body'+table);
-    if(!body || body.dataset.linkDecorating==='1') return;
-    body.dataset.linkDecorating='1';
-    try{
-      const customers=await getCustomers();
-      const records=(typeof cache!=='undefined'&&cache?.[table])||[];
-      for(const row of body.querySelectorAll('tr')){
-        const del=row.querySelector('.del');
-        if(!del) continue;
-        const record=records.find(r=>String(r.id)===String(del.dataset.id));
-        if(!record) continue;
-        const nameCell=row.querySelector('td:first-child');
-        if(!nameCell) continue;
-
-        const resolved=resolveCustomer(record,customers);
-        if(resolved) makeProfileLink(nameCell,resolved.customer);
-
-        if(record.customer_id) continue;
-        const contactMatch=findContactMatch(record,customers);
-        if(!contactMatch || row.querySelector('.merge-customer-btn')) continue;
-        const actionCell=del.closest('td') || row.lastElementChild;
-        const btn=document.createElement('button');
-        btn.type='button';
-        btn.className='btn secondary merge-customer-btn';
-        btn.style.marginRight='6px';
-        btn.textContent=`Merge with ${contactMatch.customer.name}`;
-        btn.title=`Matching ${contactMatch.reason}`;
-        btn.onclick=async(e)=>{
-          e.stopPropagation();
-          const ok=confirm(`Link this ${table.slice(0,-1)} to ${contactMatch.customer.name} because the ${contactMatch.reason} matches?`);
-          if(ok) await mergeRecord(table,record,contactMatch.customer);
-        };
-        actionCell.insertBefore(btn,del);
-      }
-    } finally {
-      body.dataset.linkDecorating='0';
-    }
+    const body=document.getElementById('body'+table);if(!body||body.dataset.linkDecorating==='1')return;body.dataset.linkDecorating='1';
+    try{const customers=await getCustomers();const records=(typeof cache!=='undefined'&&cache?.[table])||[];for(const row of body.querySelectorAll('tr')){const del=row.querySelector('.del');if(!del)continue;const record=records.find(r=>String(r.id)===String(del.dataset.id));if(!record)continue;const cell=row.querySelector('td:first-child');if(!cell)continue;const resolved=resolveCustomer(record,customers);if(resolved)makeProfileLink(cell,resolved.customer);if(record.customer_id)continue;const match=findContactMatch(record,customers);if(!match||row.querySelector('.merge-customer-btn'))continue;const action=del.closest('td')||row.lastElementChild,btn=document.createElement('button');btn.type='button';btn.className='btn secondary merge-customer-btn';btn.style.marginRight='6px';btn.textContent=`Merge with ${match.customer.name}`;btn.title=`Matching ${match.reason}`;btn.onclick=async e=>{e.stopPropagation();if(confirm(`Link this ${table.slice(0,-1)} to ${match.customer.name} because the ${match.reason} matches?`))await mergeRecord(table,record,match.customer)};action.insertBefore(btn,del)}}finally{body.dataset.linkDecorating='0'}
   }
 
-  async function wireDashboardAppointments(){
-    const upcoming=document.getElementById('upcoming');
-    if(!upcoming) return;
-    const card=upcoming.closest('.card');
-    if(card && !card.dataset.appointmentsLinked){
-      card.dataset.appointmentsLinked='1';
-      card.style.cursor='pointer';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','Open appointments');card.title='Open Appointments';
-      card.addEventListener('click',e=>{if(e.target.closest('[data-customer-profile-id]')) return;goToModule('Appointments');});
-      card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goToModule('Appointments');}});
-    }
+  // Delegated handler survives every Appointments table re-render.
+  document.addEventListener('click',e=>{
+    const cell=e.target.closest('#bodyAppointments td[data-customer-profile-id],#bodyJobs td[data-customer-profile-id],#bodyLeads td[data-customer-profile-id],#bodyEstimates td[data-customer-profile-id],#bodyPayments td[data-customer-profile-id]');
+    if(!cell)return;e.preventDefault();e.stopPropagation();openProfile(cell.dataset.customerProfileId);
+  },true);
 
-    const customers=await getCustomers();
-    const appointments=((typeof cache!=='undefined'&&cache?.Appointments)||[])
-      .filter(x=>x.scheduled_for&&new Date(x.scheduled_for)>=new Date())
-      .sort((a,b)=>new Date(a.scheduled_for)-new Date(b.scheduled_for))
-      .slice(0,5);
-    const rows=[...upcoming.querySelectorAll('p')];
-    rows.forEach((p,i)=>{
-      const appointment=appointments[i];
-      const strong=p.querySelector('strong');
-      if(!appointment||!strong) return;
-      const resolved=resolveCustomer(appointment,customers);
-      if(!resolved) return;
-      strong.dataset.customerProfileId=String(resolved.customer.id);
-      strong.style.color='#0d47a1';strong.style.textDecoration='underline';strong.style.textUnderlineOffset='2px';strong.style.cursor='pointer';strong.title='Open customer profile';
-      if(strong.dataset.customerProfileBound==='1') return;
-      strong.dataset.customerProfileBound='1';
-      strong.addEventListener('click',e=>{e.stopPropagation();openProfile(strong.dataset.customerProfileId);});
-    });
-  }
+  async function wireDashboardAppointments(){const upcoming=document.getElementById('upcoming');if(!upcoming)return;const card=upcoming.closest('.card');if(card&&!card.dataset.appointmentsLinked){card.dataset.appointmentsLinked='1';card.style.cursor='pointer';card.tabIndex=0;card.setAttribute('role','button');card.title='Open Appointments';card.addEventListener('click',e=>{if(e.target.closest('[data-customer-profile-id]'))return;goToModule('Appointments')})}const customers=await getCustomers();const apps=((typeof cache!=='undefined'&&cache?.Appointments)||[]).filter(x=>x.scheduled_for&&new Date(x.scheduled_for)>=new Date()).sort((a,b)=>new Date(a.scheduled_for)-new Date(b.scheduled_for)).slice(0,5);[...upcoming.querySelectorAll('p')].forEach((p,i)=>{const a=apps[i],strong=p.querySelector('strong');if(!a||!strong)return;const r=resolveCustomer(a,customers);if(!r)return;strong.dataset.customerProfileId=String(r.customer.id);strong.style.color='#0d47a1';strong.style.textDecoration='underline';strong.style.cursor='pointer';strong.title='Open customer profile'});}
+  document.addEventListener('click',e=>{const el=e.target.closest('#upcoming [data-customer-profile-id]');if(!el)return;e.preventDefault();e.stopPropagation();openProfile(el.dataset.customerProfileId)},true);
 
-  function decorateAll(){
-    TABLES.forEach(t=>decorateTable(t).catch(()=>{}));
-    wireDashboardAppointments().catch(()=>{});
-  }
-
-  ensureContactFields();
-  document.addEventListener('click',e=>{const nav=e.target.closest('#nav button[data-page]');if(nav)setTimeout(decorateAll,150);});
-  const observer=new MutationObserver(()=>setTimeout(decorateAll,50));
-  observer.observe(document.body,{childList:true,subtree:true});
-  setTimeout(decorateAll,200);
+  function decorateAll(){TABLES.forEach(t=>decorateTable(t).catch(()=>{}));wireDashboardAppointments().catch(()=>{})}
+  ensureContactFields();document.addEventListener('click',e=>{if(e.target.closest('#nav button[data-page]'))setTimeout(decorateAll,150)});new MutationObserver(()=>setTimeout(decorateAll,50)).observe(document.body,{childList:true,subtree:true});setTimeout(decorateAll,200);
 })();
