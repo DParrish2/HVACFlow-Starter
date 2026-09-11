@@ -8,6 +8,7 @@ on:
       - customer-linking.js
       - address-maps.js
       - team-members.js
+      - team-plan-gate.js
       - plan-descriptions.js
       - website-leads.js
       - job-notes-contractors.js
@@ -35,6 +36,7 @@ jobs:
               '<script src="/customer-linking.js"></script>',
               '<script src="/address-maps.js"></script>',
               '<script src="/team-members.js"></script>',
+              '<script src="/team-plan-gate.js"></script>',
               '<script src="/plan-descriptions.js"></script>',
               '<script src="/website-leads.js"></script>',
               '<script src="/job-notes-contractors.js"></script>',
