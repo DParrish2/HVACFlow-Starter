@@ -88,7 +88,6 @@ module.exports = async function checkout(req, res) {
   const { type, plan, customer, email, amount } = req.body || {};
   const origin = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
   const params = new URLSearchParams();
-  params.set('managed_payments[enabled]', 'false');
   const billingEmail=String(identity?.owner_email||user.email).toLowerCase();
 
   if (type === 'customer_payment') {
@@ -146,7 +145,7 @@ module.exports = async function checkout(req, res) {
     });
     const session = await stripeResponse.json();
     if (!stripeResponse.ok) {
-      console.error('Stripe checkout error', session.error?.type, session.error?.code);
+      console.error('Stripe checkout error', session.error?.type, session.error?.code, session.error?.message);
       return res.status(502).json({ error: 'Stripe checkout is temporarily unavailable.' });
     }
     return res.status(200).json({ url: session.url });
