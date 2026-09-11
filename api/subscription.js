@@ -3,20 +3,38 @@ const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com','shedtoshelf@gmail.com']);
 
-async function getAuthenticatedUser(req) {
+function bearerFrom(req) {
   const auth = String(req.headers.authorization || '');
   if (!auth.startsWith('Bearer ')) return null;
   const token = auth.slice(7).trim();
-  if (!token) return null;
+  return token || null;
+}
 
+async function getAuthenticatedUser(req) {
+  const token = bearerFrom(req);
+  if (!token) return null;
   const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
   });
   if (!response.ok) return null;
   return response.json();
+}
+
+async function getCompanyIdentity(req) {
+  const token = bearerFrom(req);
+  if (!token) return null;
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/hvacflow_company_subscription_identity`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  });
+  if (!response.ok) return null;
+  const rows = await response.json();
+  return Array.isArray(rows) ? rows[0] || null : rows;
 }
 
 async function stripeGet(secretKey, path, query = {}) {
@@ -24,9 +42,7 @@ async function stripeGet(secretKey, path, query = {}) {
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
   });
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${secretKey}` },
-  });
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${secretKey}` } });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.message || 'Stripe request failed.');
   return data;
@@ -47,7 +63,6 @@ async function findActiveSubscription(secretKey, email) {
 }
 
 function planFromPrice(subscription) {
-  const priceId = subscription?.items?.data?.[0]?.price?.id || '';
   const live = {
     price_1UClfwRzvI2im2M050ltFOac: 'starter',
     price_1UClfxRzvI2im2M0iFYPmAsi: 'professional',
@@ -58,7 +73,12 @@ function planFromPrice(subscription) {
     price_1UDDxcRzvI2im2M0uGGDCipB: 'professional',
     price_1UDDxdRzvI2im2M0orTHwQLN: 'business',
   };
-  return live[priceId] || test[priceId] || null;
+  for (const item of subscription?.items?.data || []) {
+    const id = item?.price?.id || '';
+    if (live[id]) return live[id];
+    if (test[id]) return test[id];
+  }
+  return null;
 }
 
 module.exports = async function subscription(req, res) {
@@ -68,35 +88,43 @@ module.exports = async function subscription(req, res) {
   }
 
   let user;
+  let identity;
   try {
     user = await getAuthenticatedUser(req);
+    identity = await getCompanyIdentity(req);
   } catch (error) {
-    console.error('Supabase auth verification failed', error.message);
+    console.error('Supabase account verification failed', error.message);
     return res.status(503).json({ error: 'Account verification is temporarily unavailable.' });
   }
-  if (!user?.id || !user?.email) {
-    return res.status(401).json({ error: 'Please sign in again.' });
-  }
+  if (!user?.id || !user?.email) return res.status(401).json({ error: 'Please sign in again.' });
 
-  if (TEST_ACCOUNT_EMAILS.has(String(user.email).toLowerCase())) {
-    return res.status(200).json({ active: true, status: 'test_account', plan: 'business', test_account: true });
+  const billingEmail = String(identity?.owner_email || user.email).toLowerCase();
+  if (TEST_ACCOUNT_EMAILS.has(billingEmail)) {
+    return res.status(200).json({
+      active: true,
+      status: 'test_account',
+      plan: 'business',
+      test_account: true,
+      company_id: identity?.company_id || null,
+      member_role: identity?.member_role || null,
+    });
   }
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    return res.status(500).json({ error: 'Stripe is not configured yet.' });
-  }
+  if (!secretKey) return res.status(500).json({ error: 'Stripe is not configured yet.' });
 
   try {
-    const subscription = await findActiveSubscription(secretKey, user.email);
+    const subscription = await findActiveSubscription(secretKey, billingEmail);
     if (!subscription) {
-      return res.status(200).json({ active: false, status: 'inactive', plan: null });
+      return res.status(200).json({ active: false, status: 'inactive', plan: null, company_id: identity?.company_id || null, member_role: identity?.member_role || null });
     }
     return res.status(200).json({
       active: true,
       status: subscription.status,
       plan: planFromPrice(subscription),
       current_period_end: subscription.current_period_end || null,
+      company_id: identity?.company_id || null,
+      member_role: identity?.member_role || null,
     });
   } catch (error) {
     console.error('Subscription lookup failed', error.message);
