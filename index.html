@@ -59,4 +59,5 @@ async function setSession(session){if(session){$('auth').classList.add('hidden')
 sb.auth.onAuthStateChange((event,s)=>{if(event==='PASSWORD_RECOVERY')showRecovery();else if(!recoveryMode)setSession(s)});sb.auth.getSession().then(({data})=>setSession(data.session));
 </script><script src="/customer-profile.js"></script>
 <script src="/customer-linking.js"></script>
+<script src="/address-maps.js"></script>
 </body></html>
