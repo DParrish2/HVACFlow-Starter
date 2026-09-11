@@ -9,6 +9,7 @@ on:
       - address-maps.js
       - team-members.js
       - plan-descriptions.js
+      - website-leads.js
       - .github/workflows/inject-customer-profile.yml
   workflow_dispatch:
 
@@ -33,6 +34,7 @@ jobs:
               '<script src="/address-maps.js"></script>',
               '<script src="/team-members.js"></script>',
               '<script src="/plan-descriptions.js"></script>',
+              '<script src="/website-leads.js"></script>',
           ]
           changed = False
           for tag in tags:
@@ -52,5 +54,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Load customer, maps, team, and plan helpers"
+          git commit -m "Load HVACFlow customer, team, plans, and website leads helpers"
           git push
