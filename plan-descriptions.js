@@ -10,28 +10,28 @@
         <h2>Starter</h2>
         <div class="price">$29 <small>/ month</small></div>
         <p><strong>1 user included.</strong></p>
-        <p>For a solo contractor. Includes customer management, jobs, estimates, scheduling, and payment tools.</p>
+        <p><strong>Unlocks:</strong> The complete HVACFlow core platform for one contractor — customers, customer profiles, leads, jobs, estimates, appointments, scheduling, payments, and dashboard tools.</p>
         <button class="btn primary subscribe" data-plan="starter">Choose Starter</button>
       </div>
       <div class="card plan">
         <h2>Professional</h2>
         <div class="price">$59 <small>/ month</small></div>
         <p><strong>Up to 5 users included.</strong></p>
-        <p>For small contractor teams that need shared customers, jobs, estimates, appointments, and payments.</p>
+        <p><strong>Unlocks:</strong> Everything in Starter, plus shared company access for up to 5 employees with individual team-member logins.</p>
         <button class="btn primary subscribe" data-plan="professional">Choose Professional</button>
       </div>
       <div class="card plan">
         <h2>Business</h2>
         <div class="price">$99 <small>/ month</small></div>
         <p><strong>Up to 15 users included.</strong></p>
-        <p>For established contractor companies with office staff, dispatchers, and multiple technicians.</p>
+        <p><strong>Unlocks:</strong> Everything in Professional, with team capacity expanded to 15 users for larger crews, office staff, dispatchers, and technicians.</p>
         <button class="btn primary subscribe" data-plan="business">Choose Business</button>
       </div>
       <div class="card plan">
         <h2>Professional Plus</h2>
         <div class="price">$107 <small>/ month starting</small></div>
         <p><strong>16+ users.</strong></p>
-        <p>Business includes the first 15 users. Professional Plus starts with user 16, then each employee over 15 is <strong>$8/month</strong>.</p>
+        <p><strong>Unlocks:</strong> Everything in Business with expandable team capacity beyond 15 users. Each employee over 15 adds <strong>$8/month</strong>.</p>
         <button class="btn primary subscribe" data-plan="professional_plus">Choose Professional Plus</button>
       </div>`;
 
