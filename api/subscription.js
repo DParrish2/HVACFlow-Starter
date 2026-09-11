@@ -4,6 +4,18 @@ const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com','shedtoshelf@gmail.com']);
 const EXTRA_SEAT_PRICE_ID = 'price_1UEQxXRzvI2im2M0FROnmKZn';
 
+const PLAN_BY_PRICE = {
+  price_1UEdXZRzvI2im2M0SgEbVpRS: 'starter',
+  price_1UEdboRzvI2im2M0NqEktGrG: 'professional',
+  price_1UEdb0RzvI2im2M0srFI6gfc: 'business',
+  price_1UClfwRzvI2im2M050ltFOac: 'starter',
+  price_1UClfxRzvI2im2M0iFYPmAsi: 'professional',
+  price_1UClfyRzvI2im2M02XxWncbd: 'business',
+  price_1UDDxbRzvI2im2M0R8H80jXs: 'starter',
+  price_1UDDxcRzvI2im2M0uGGDCipB: 'professional',
+  price_1UDDxdRzvI2im2M0orTHwQLN: 'business',
+};
+
 function bearerFrom(req) {
   const auth = String(req.headers.authorization || '');
   if (!auth.startsWith('Bearer ')) return null;
@@ -63,27 +75,16 @@ async function findActiveSubscription(secretKey, email) {
   return null;
 }
 
-function planFromPrice(subscription) {
+function subscriptionDetails(subscription) {
   const items = subscription?.items?.data || [];
-  const extraSeatItem = items.find(item => item?.price?.id === EXTRA_SEAT_PRICE_ID && Number(item.quantity || 0) > 0);
-  if (extraSeatItem) return 'professional_plus';
-
-  const live = {
-    price_1UClfwRzvI2im2M050ltFOac: 'starter',
-    price_1UClfxRzvI2im2M0iFYPmAsi: 'professional',
-    price_1UClfyRzvI2im2M02XxWncbd: 'business',
-  };
-  const test = {
-    price_1UDDxbRzvI2im2M0R8H80jXs: 'starter',
-    price_1UDDxcRzvI2im2M0uGGDCipB: 'professional',
-    price_1UDDxdRzvI2im2M0orTHwQLN: 'business',
-  };
+  let plan = null;
+  let extraSeats = 0;
   for (const item of items) {
     const id = item?.price?.id || '';
-    if (live[id]) return live[id];
-    if (test[id]) return test[id];
+    if (id === EXTRA_SEAT_PRICE_ID) extraSeats = Number(item.quantity || 0);
+    if (!plan && PLAN_BY_PRICE[id]) plan = PLAN_BY_PRICE[id];
   }
-  return null;
+  return { plan, extraSeats };
 }
 
 module.exports = async function subscription(req, res) {
@@ -109,6 +110,7 @@ module.exports = async function subscription(req, res) {
       active: true,
       status: 'test_account',
       plan: 'business',
+      extra_seats: 0,
       test_account: true,
       company_id: identity?.company_id || null,
       member_role: identity?.member_role || null,
@@ -121,12 +123,14 @@ module.exports = async function subscription(req, res) {
   try {
     const subscription = await findActiveSubscription(secretKey, billingEmail);
     if (!subscription) {
-      return res.status(200).json({ active: false, status: 'inactive', plan: null, company_id: identity?.company_id || null, member_role: identity?.member_role || null });
+      return res.status(200).json({ active: false, status: 'inactive', plan: null, extra_seats: 0, company_id: identity?.company_id || null, member_role: identity?.member_role || null });
     }
+    const details=subscriptionDetails(subscription);
     return res.status(200).json({
       active: true,
       status: subscription.status,
-      plan: planFromPrice(subscription),
+      plan: details.plan,
+      extra_seats: details.extraSeats,
       current_period_end: subscription.current_period_end || null,
       company_id: identity?.company_id || null,
       member_role: identity?.member_role || null,
