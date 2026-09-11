@@ -5,7 +5,6 @@
 
   function normEmail(v){ return String(v||'').trim().toLowerCase(); }
   function normPhone(v){ return String(v||'').replace(/\D/g,''); }
-  function safeText(v){ return esc(v==null?'':v); }
 
   function ensureContactFields(){
     const add = (table) => {
@@ -33,6 +32,14 @@
     if(e){ const byEmail=customers.find(c=>normEmail(c.email)===e); if(byEmail) return {customer:byEmail,reason:'email'}; }
     if(p){ const byPhone=customers.find(c=>normPhone(c.phone)===p); if(byPhone) return {customer:byPhone,reason:'phone'}; }
     return null;
+  }
+
+  function goToModule(table){
+    const id=table.toLowerCase();
+    const btn=document.querySelector(`#nav button[data-page="${id}"]`);
+    if(btn){ btn.click(); return; }
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id)?.classList.add('active');
   }
 
   async function openProfile(customerId){
@@ -107,7 +114,51 @@
     }
   }
 
-  function decorateAll(){ TABLES.forEach(t=>decorateTable(t).catch(()=>{})); }
+  function wireDashboardAppointments(){
+    const upcoming=document.getElementById('upcoming');
+    if(!upcoming) return;
+    const card=upcoming.closest('.card');
+    if(card && !card.dataset.appointmentsLinked){
+      card.dataset.appointmentsLinked='1';
+      card.style.cursor='pointer';
+      card.tabIndex=0;
+      card.setAttribute('role','button');
+      card.setAttribute('aria-label','Open appointments');
+      card.title='Open Appointments';
+      card.addEventListener('click',e=>{
+        if(e.target.closest('[data-customer-profile-id]')) return;
+        goToModule('Appointments');
+      });
+      card.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();goToModule('Appointments');}
+      });
+    }
+
+    const appointments=(cache?.Appointments||[])
+      .filter(x=>x.scheduled_for&&new Date(x.scheduled_for)>=new Date())
+      .sort((a,b)=>new Date(a.scheduled_for)-new Date(b.scheduled_for))
+      .slice(0,5);
+    const rows=[...upcoming.querySelectorAll('p')];
+    rows.forEach((p,i)=>{
+      const appointment=appointments[i];
+      const strong=p.querySelector('strong');
+      if(!appointment?.customer_id || !strong || strong.dataset.customerProfileId) return;
+      strong.dataset.customerProfileId=String(appointment.customer_id);
+      strong.style.color='#0d47a1';
+      strong.style.textDecoration='underline';
+      strong.style.cursor='pointer';
+      strong.title='Open customer profile';
+      strong.addEventListener('click',e=>{
+        e.stopPropagation();
+        openProfile(appointment.customer_id);
+      });
+    });
+  }
+
+  function decorateAll(){
+    TABLES.forEach(t=>decorateTable(t).catch(()=>{}));
+    wireDashboardAppointments();
+  }
 
   ensureContactFields();
   document.addEventListener('click',e=>{
