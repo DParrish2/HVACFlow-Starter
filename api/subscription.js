@@ -2,6 +2,7 @@ const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
 const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com','shedtoshelf@gmail.com']);
+const EXTRA_SEAT_PRICE_ID = 'price_1UEQxXRzvI2im2M0FROnmKZn';
 
 function bearerFrom(req) {
   const auth = String(req.headers.authorization || '');
@@ -63,6 +64,10 @@ async function findActiveSubscription(secretKey, email) {
 }
 
 function planFromPrice(subscription) {
+  const items = subscription?.items?.data || [];
+  const extraSeatItem = items.find(item => item?.price?.id === EXTRA_SEAT_PRICE_ID && Number(item.quantity || 0) > 0);
+  if (extraSeatItem) return 'professional_plus';
+
   const live = {
     price_1UClfwRzvI2im2M050ltFOac: 'starter',
     price_1UClfxRzvI2im2M0iFYPmAsi: 'professional',
@@ -73,7 +78,7 @@ function planFromPrice(subscription) {
     price_1UDDxcRzvI2im2M0uGGDCipB: 'professional',
     price_1UDDxdRzvI2im2M0orTHwQLN: 'business',
   };
-  for (const item of subscription?.items?.data || []) {
+  for (const item of items) {
     const id = item?.price?.id || '';
     if (live[id]) return live[id];
     if (test[id]) return test[id];
