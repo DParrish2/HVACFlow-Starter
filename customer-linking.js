@@ -5,10 +5,11 @@
 
   function normEmail(v){ return String(v||'').trim().toLowerCase(); }
   function normPhone(v){ return String(v||'').replace(/\D/g,''); }
+  function normName(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
 
   function ensureContactFields(){
     const add = (table) => {
-      if(!modules?.[table]) return;
+      if(typeof modules==='undefined' || !modules?.[table]) return;
       const names = new Set(modules[table].fields.map(f=>f[0]));
       const insertAt = Math.min(1, modules[table].fields.length);
       const extra = [];
@@ -27,11 +28,26 @@
     return customerCache;
   }
 
-  function findMatch(record, customers){
+  function findContactMatch(record, customers){
     const e=normEmail(record.email), p=normPhone(record.phone);
     if(e){ const byEmail=customers.find(c=>normEmail(c.email)===e); if(byEmail) return {customer:byEmail,reason:'email'}; }
     if(p){ const byPhone=customers.find(c=>normPhone(c.phone)===p); if(byPhone) return {customer:byPhone,reason:'phone'}; }
     return null;
+  }
+
+  function findUniqueNameMatch(record,customers){
+    const n=normName(record.customer_name);
+    if(!n) return null;
+    const matches=customers.filter(c=>normName(c.name)===n);
+    return matches.length===1?{customer:matches[0],reason:'name'}:null;
+  }
+
+  function resolveCustomer(record,customers){
+    if(record.customer_id){
+      const byId=customers.find(c=>String(c.id)===String(record.customer_id));
+      if(byId) return {customer:byId,reason:'linked'};
+    }
+    return findContactMatch(record,customers)||findUniqueNameMatch(record,customers);
   }
 
   function goToModule(table){
@@ -57,12 +73,23 @@
     const customerUpdates={};
     if(!customer.phone && record.phone) customerUpdates.phone=record.phone;
     if(!customer.email && record.email) customerUpdates.email=record.email;
-    if(Object.keys(customerUpdates).length){
-      await sb.from('Customers').update(customerUpdates).eq('id',customer.id);
-    }
+    if(Object.keys(customerUpdates).length) await sb.from('Customers').update(customerUpdates).eq('id',customer.id);
     customerCacheAt=0;
     if(typeof loadModule==='function') await loadModule(table);
     if(typeof loadDashboard==='function') await loadDashboard();
+  }
+
+  function makeProfileLink(cell,customer){
+    if(!cell||!customer) return;
+    cell.style.color='#0d47a1';
+    cell.style.fontWeight='700';
+    cell.style.cursor='pointer';
+    cell.style.textDecoration='underline';
+    cell.style.textUnderlineOffset='2px';
+    cell.title='Open customer profile';
+    if(cell.dataset.profileCustomerId===String(customer.id)) return;
+    cell.dataset.profileCustomerId=String(customer.id);
+    cell.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openProfile(customer.id);});
   }
 
   async function decorateTable(table){
@@ -71,7 +98,7 @@
     body.dataset.linkDecorating='1';
     try{
       const customers=await getCustomers();
-      const records=cache?.[table]||[];
+      const records=(typeof cache!=='undefined'&&cache?.[table])||[];
       for(const row of body.querySelectorAll('tr')){
         const del=row.querySelector('.del');
         if(!del) continue;
@@ -80,32 +107,23 @@
         const nameCell=row.querySelector('td:first-child');
         if(!nameCell) continue;
 
-        if(record.customer_id){
-          nameCell.style.color='#0d47a1';
-          nameCell.style.fontWeight='700';
-          nameCell.style.cursor='pointer';
-          nameCell.style.textDecoration='underline';
-          nameCell.title='Open customer profile';
-          if(!nameCell.dataset.profileLink){
-            nameCell.dataset.profileLink='1';
-            nameCell.addEventListener('click',()=>openProfile(record.customer_id));
-          }
-          continue;
-        }
+        const resolved=resolveCustomer(record,customers);
+        if(resolved) makeProfileLink(nameCell,resolved.customer);
 
-        const match=findMatch(record,customers);
-        if(!match || row.querySelector('.merge-customer-btn')) continue;
+        if(record.customer_id) continue;
+        const contactMatch=findContactMatch(record,customers);
+        if(!contactMatch || row.querySelector('.merge-customer-btn')) continue;
         const actionCell=del.closest('td') || row.lastElementChild;
         const btn=document.createElement('button');
         btn.type='button';
         btn.className='btn secondary merge-customer-btn';
         btn.style.marginRight='6px';
-        btn.textContent=`Merge with ${match.customer.name}`;
-        btn.title=`Matching ${match.reason}`;
+        btn.textContent=`Merge with ${contactMatch.customer.name}`;
+        btn.title=`Matching ${contactMatch.reason}`;
         btn.onclick=async(e)=>{
           e.stopPropagation();
-          const ok=confirm(`Link this ${table.slice(0,-1)} to ${match.customer.name} because the ${match.reason} matches?`);
-          if(ok) await mergeRecord(table,record,match.customer);
+          const ok=confirm(`Link this ${table.slice(0,-1)} to ${contactMatch.customer.name} because the ${contactMatch.reason} matches?`);
+          if(ok) await mergeRecord(table,record,contactMatch.customer);
         };
         actionCell.insertBefore(btn,del);
       }
@@ -114,27 +132,19 @@
     }
   }
 
-  function wireDashboardAppointments(){
+  async function wireDashboardAppointments(){
     const upcoming=document.getElementById('upcoming');
     if(!upcoming) return;
     const card=upcoming.closest('.card');
     if(card && !card.dataset.appointmentsLinked){
       card.dataset.appointmentsLinked='1';
-      card.style.cursor='pointer';
-      card.tabIndex=0;
-      card.setAttribute('role','button');
-      card.setAttribute('aria-label','Open appointments');
-      card.title='Open Appointments';
-      card.addEventListener('click',e=>{
-        if(e.target.closest('[data-customer-profile-id]')) return;
-        goToModule('Appointments');
-      });
-      card.addEventListener('keydown',e=>{
-        if(e.key==='Enter'||e.key===' '){e.preventDefault();goToModule('Appointments');}
-      });
+      card.style.cursor='pointer';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','Open appointments');card.title='Open Appointments';
+      card.addEventListener('click',e=>{if(e.target.closest('[data-customer-profile-id]')) return;goToModule('Appointments');});
+      card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goToModule('Appointments');}});
     }
 
-    const appointments=(cache?.Appointments||[])
+    const customers=await getCustomers();
+    const appointments=((typeof cache!=='undefined'&&cache?.Appointments)||[])
       .filter(x=>x.scheduled_for&&new Date(x.scheduled_for)>=new Date())
       .sort((a,b)=>new Date(a.scheduled_for)-new Date(b.scheduled_for))
       .slice(0,5);
@@ -142,29 +152,24 @@
     rows.forEach((p,i)=>{
       const appointment=appointments[i];
       const strong=p.querySelector('strong');
-      if(!appointment?.customer_id || !strong || strong.dataset.customerProfileId) return;
-      strong.dataset.customerProfileId=String(appointment.customer_id);
-      strong.style.color='#0d47a1';
-      strong.style.textDecoration='underline';
-      strong.style.cursor='pointer';
-      strong.title='Open customer profile';
-      strong.addEventListener('click',e=>{
-        e.stopPropagation();
-        openProfile(appointment.customer_id);
-      });
+      if(!appointment||!strong) return;
+      const resolved=resolveCustomer(appointment,customers);
+      if(!resolved) return;
+      strong.dataset.customerProfileId=String(resolved.customer.id);
+      strong.style.color='#0d47a1';strong.style.textDecoration='underline';strong.style.textUnderlineOffset='2px';strong.style.cursor='pointer';strong.title='Open customer profile';
+      if(strong.dataset.customerProfileBound==='1') return;
+      strong.dataset.customerProfileBound='1';
+      strong.addEventListener('click',e=>{e.stopPropagation();openProfile(strong.dataset.customerProfileId);});
     });
   }
 
   function decorateAll(){
     TABLES.forEach(t=>decorateTable(t).catch(()=>{}));
-    wireDashboardAppointments();
+    wireDashboardAppointments().catch(()=>{});
   }
 
   ensureContactFields();
-  document.addEventListener('click',e=>{
-    const nav=e.target.closest('#nav button[data-page]');
-    if(nav) setTimeout(decorateAll,150);
-  });
+  document.addEventListener('click',e=>{const nav=e.target.closest('#nav button[data-page]');if(nav)setTimeout(decorateAll,150);});
   const observer=new MutationObserver(()=>setTimeout(decorateAll,50));
   observer.observe(document.body,{childList:true,subtree:true});
   setTimeout(decorateAll,200);
