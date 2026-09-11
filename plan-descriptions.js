@@ -4,41 +4,37 @@
     const plans=billing?.querySelector('.plans');
     if(!plans || plans.dataset.planDescriptionsReady==='1') return;
     plans.dataset.planDescriptionsReady='1';
-    plans.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
+    plans.style.gridTemplateColumns='repeat(3,minmax(0,1fr))';
     plans.innerHTML=`
       <div class="card plan">
         <h2>Starter</h2>
-        <div class="price">$29 <small>/ month</small></div>
+        <div class="price">$29.99 <small>/ month</small></div>
         <p><strong>1 user included.</strong></p>
-        <p><strong>Unlocks:</strong> The complete HVACFlow core platform for one contractor — customers, customer profiles, leads, jobs, estimates, appointments, scheduling, payments, and dashboard tools.</p>
+        <p><strong>Unlocks:</strong> The complete HVACFlow core platform — customers, customer profiles, leads, jobs, estimates, appointments, scheduling, payments, and dashboard tools.</p>
+        <p><strong>Extra seats:</strong> $8/user/month. Add up to 3 extra seats (4 total users). At 5 users, Professional is the better value.</p>
         <button class="btn primary subscribe" data-plan="starter">Choose Starter</button>
       </div>
       <div class="card plan">
         <h2>Professional</h2>
-        <div class="price">$59 <small>/ month</small></div>
+        <div class="price">$59.99 <small>/ month</small></div>
         <p><strong>Up to 5 users included.</strong></p>
-        <p><strong>Unlocks:</strong> Everything in Starter, plus shared company access for up to 5 employees with individual team-member logins.</p>
+        <p><strong>Unlocks:</strong> Everything in Starter, plus shared company access with individual team-member logins.</p>
+        <p><strong>Extra seats:</strong> $8/user/month. Add up to 4 extra seats (9 total users). At 10 users, Business costs the same and includes 15 users.</p>
         <button class="btn primary subscribe" data-plan="professional">Choose Professional</button>
       </div>
       <div class="card plan">
         <h2>Business</h2>
-        <div class="price">$99 <small>/ month</small></div>
+        <div class="price">$99.99 <small>/ month</small></div>
         <p><strong>Up to 15 users included.</strong></p>
-        <p><strong>Unlocks:</strong> Everything in Professional, with team capacity expanded to 15 users for larger crews, office staff, dispatchers, and technicians.</p>
+        <p><strong>Unlocks:</strong> Everything in Professional, with team capacity expanded for larger crews, office staff, dispatchers, and technicians.</p>
+        <p><strong>Extra seats:</strong> $8/user/month above 15, with no forced upgrade.</p>
         <button class="btn primary subscribe" data-plan="business">Choose Business</button>
-      </div>
-      <div class="card plan">
-        <h2>Professional Plus</h2>
-        <div class="price">$107 <small>/ month starting</small></div>
-        <p><strong>16+ users.</strong></p>
-        <p><strong>Unlocks:</strong> Everything in Business with expandable team capacity beyond 15 users. Each employee over 15 adds <strong>$8/month</strong>.</p>
-        <button class="btn primary subscribe" data-plan="professional_plus">Choose Professional Plus</button>
       </div>`;
 
     if(!document.getElementById('planGridResponsive')){
       const style=document.createElement('style');
       style.id='planGridResponsive';
-      style.textContent='@media(max-width:1100px){#billing .plans{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:650px){#billing .plans{grid-template-columns:1fr!important}}';
+      style.textContent='@media(max-width:950px){#billing .plans{grid-template-columns:1fr!important}}';
       document.head.appendChild(style);
     }
   }
