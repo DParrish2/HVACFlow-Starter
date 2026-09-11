@@ -1,5 +1,6 @@
 (() => {
   const PLAN_LIMITS={starter:1,professional:5,business:15};
+  const MAX_EXTRA_SEATS={starter:3,professional:4,business:200};
   let acceptingInvite=false;
 
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -42,7 +43,7 @@
     const host=document.getElementById('modulePages')||document.querySelector('main');
     if(host&&!document.getElementById('team')){
       const page=document.createElement('section');page.className='page';page.id='team';
-      page.innerHTML='<h1>Team Members</h1><p class="sub">Manage employee logins and seats for your HVACFlow company.</p><div id="teamContent" class="card">Loading…</div>';
+      page.innerHTML='<h1>Team Members</h1><p class="sub">Manage employee logins and paid seats for your HVACFlow company.</p><div id="teamContent" class="card">Loading…</div>';
       host.appendChild(page);
     }
     const teamButton=nav?.querySelector('[data-page="team"]');
@@ -57,7 +58,7 @@
       const response=await fetch('/api/subscription',{headers:{Authorization:`Bearer ${session.access_token}`}});
       const data=await response.json();
       if(!response.ok||!data.active||!PLAN_LIMITS[data.plan]) return;
-      await sb.from('Companies').update({subscription_plan:data.plan,included_user_limit:PLAN_LIMITS[data.plan]}).eq('id',currentCompany.id);
+      await sb.from('Companies').update({subscription_plan:data.plan,included_user_limit:PLAN_LIMITS[data.plan],extra_user_limit:Number(data.extra_seats||0)}).eq('id',currentCompany.id);
     }catch(_e){}
   }
 
@@ -71,6 +72,12 @@
 
   async function copyText(text,button){
     try{await navigator.clipboard.writeText(text);const old=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=old,1200)}catch(_e){prompt('Copy this invitation link:',text);}
+  }
+
+  function seatGuidance(plan){
+    if(plan==='starter') return 'Starter includes 1 user. Add up to 3 extra seats for $8 each (4 total). At 5 users, upgrade to Professional.';
+    if(plan==='professional') return 'Professional includes 5 users. Add up to 4 extra seats for $8 each (9 total). At 10 users, Business is the same base price as 5 extra seats and includes 15 users.';
+    return 'Business includes 15 users. Add additional seats for $8 each with no forced upgrade.';
   }
 
   async function loadTeam(){
@@ -93,6 +100,7 @@
       const activeMembers=Number(summary.member_count||0);
       const totalSeats=Number(summary.seat_limit||1);
       const extraSeats=Number(summary.extra_user_limit||0);
+      const maxExtra=MAX_EXTRA_SEATS[plan]??0;
       host.innerHTML=`
         <div class="team-grid">
           <div class="team-stat"><small>Plan</small><strong>${escapeHtml(title(plan))}</strong></div>
@@ -103,7 +111,7 @@
         ${canManage?`<div class="card" style="box-shadow:none;margin-bottom:14px"><h3>Invite a team member</h3><p class="sub">Each employee gets their own login and shares this company's customers, jobs, estimates, appointments and payments.</p><form id="teamInviteForm" class="team-form"><label>Email<input name="email" type="email" required placeholder="employee@example.com"></label><label>Role<select name="role"><option value="technician">Technician</option><option value="dispatcher">Dispatcher</option><option value="admin">Admin</option></select></label><button class="btn primary" type="submit">Create Invite</button></form><div id="teamInviteMsg"></div></div>`:''}
         <div class="card" style="box-shadow:none;margin-bottom:14px"><h3>Current team</h3><div id="teamMembersList">${(members||[]).map(m=>`<div class="team-member-row"><div><strong>${escapeHtml(m.email||'User')}</strong><span class="team-role">${escapeHtml(title(m.role))}</span></div><div class="team-actions">${isOwner&&m.role!=='owner'?`<button class="btn danger team-remove" data-user="${m.user_id}">Remove</button>`:''}</div></div>`).join('')||'<div class="empty">No team members yet.</div>'}</div></div>
         ${canManage?`<div class="card" style="box-shadow:none;margin-bottom:14px"><h3>Pending invitations</h3><div id="teamInvitesList">${(invites||[]).map(i=>`<div class="team-invite-row"><div><strong>${escapeHtml(i.email)}</strong><span class="team-role">${escapeHtml(title(i.role))}</span><div class="sub" style="margin:4px 0 0">Expires ${new Date(i.expires_at).toLocaleDateString()}</div></div><div class="team-actions"><button class="btn secondary team-copy" data-token="${i.token}">Copy Link</button><button class="btn danger team-cancel" data-id="${i.id}">Cancel</button></div></div>`).join('')||'<div class="empty">No pending invitations.</div>'}</div></div>`:''}
-        <div class="card" style="box-shadow:none"><h3>Seat limits</h3><p>Starter includes <strong>1</strong> user, Professional includes <strong>5</strong>, and Business includes <strong>15</strong>.</p>${plan==='business'&&isOwner?`<p>Need more than 15? Extra users are <strong>$8 per user/month</strong>.</p><div class="team-seat-box"><label>Extra paid seats<input id="extraSeats" type="number" min="0" max="200" value="${extraSeats}"></label><button class="btn primary" id="updateExtraSeats">Update Paid Seats</button></div><div id="seatMsg"></div><p class="plan-note">Changing paid seats updates your Stripe subscription and may create a prorated charge or credit.</p>`:plan!=='business'?'<p class="plan-note">Upgrade to Business for teams larger than 5 users. Paid extra seats are available above the 15 Business seats.</p>':''}</div>`;
+        <div class="card" style="box-shadow:none"><h3>Seats & pricing</h3><p>Starter includes <strong>1</strong> user, Professional includes <strong>5</strong>, and Business includes <strong>15</strong>. Additional seats are <strong>$8 per user/month</strong> on every plan.</p><p>${escapeHtml(seatGuidance(plan))}</p>${isOwner?`<div class="team-seat-box"><label>Extra paid seats<input id="extraSeats" type="number" min="0" max="${maxExtra}" value="${extraSeats}"></label><button class="btn primary" id="updateExtraSeats">Update Paid Seats</button></div><div id="seatMsg"></div><p class="plan-note">Changing paid seats updates your Stripe subscription and may create a prorated charge or credit.</p>`:''}</div>`;
 
       const inviteForm=document.getElementById('teamInviteForm');
       if(inviteForm)inviteForm.onsubmit=async e=>{
@@ -116,9 +124,10 @@
       const seatButton=document.getElementById('updateExtraSeats');
       if(seatButton)seatButton.onclick=async()=>{
         const count=Math.max(0,Number.parseInt(document.getElementById('extraSeats').value,10)||0);const cost=count*8;
-        if(!confirm(`Set ${count} extra paid seat${count===1?'':'s'} for $${cost}/month in addition to the Business plan? Proration may apply.`))return;
+        if(count>maxExtra){alert(seatGuidance(plan));return;}
+        if(!confirm(`Set ${count} extra paid seat${count===1?'':'s'} for $${cost}/month in addition to the ${title(plan)} plan? Proration may apply.`))return;
         const msg=document.getElementById('seatMsg');seatButton.disabled=true;seatButton.textContent='Updating…';msg.innerHTML='';
-        try{const {data:{session}}=await sb.auth.getSession();const response=await fetch('/api/team-seats',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({extra_seats:count})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Seat update failed.');msg.innerHTML=`<div class="msg ok">Seat capacity updated to ${data.total_seats}. Extra seat cost: $${data.monthly_extra_cost}/month.</div>`;await loadTeam();}catch(error){msg.innerHTML=`<div class="msg err">${escapeHtml(error.message)}</div>`;}finally{seatButton.disabled=false;seatButton.textContent='Update Paid Seats';}
+        try{const {data:{session}}=await sb.auth.getSession();const response=await fetch('/api/team-seats',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({extra_seats:count})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Seat update failed.');msg.innerHTML=`<div class="msg ok">Seat capacity updated to ${data.total_seats}. Extra seat cost: $${data.monthly_extra_cost}/month.${data.upgrade_recommended?` Consider upgrading to ${title(data.upgrade_recommended)} before adding another user.`:''}</div>`;await loadTeam();}catch(error){msg.innerHTML=`<div class="msg err">${escapeHtml(error.message)}</div>`;}finally{seatButton.disabled=false;seatButton.textContent='Update Paid Seats';}
       };
     }catch(error){host.innerHTML=`<div class="msg err">${escapeHtml(error.message)}</div>`;}
   }
