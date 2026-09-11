@@ -10,6 +10,7 @@ const TEST_PRICE_IDS = {
   business: 'price_1UDDxdRzvI2im2M0orTHwQLN',
 };
 
+const EXTRA_SEAT_PRICE_ID = 'price_1UEQxXRzvI2im2M0FROnmKZn';
 const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
@@ -119,16 +120,25 @@ module.exports = async function checkout(req, res) {
     if(customerEmail) params.set('customer_email',customerEmail);
   } else {
     if(identity?.member_role && identity.member_role!=='owner') return res.status(403).json({error:'Only the account owner can change the company subscription.'});
-    const priceIds = secretKey.startsWith('sk_test_') ? TEST_PRICE_IDS : LIVE_PRICE_IDS;
-    const price = priceIds[plan];
+    const testMode = secretKey.startsWith('sk_test_');
+    const priceIds = testMode ? TEST_PRICE_IDS : LIVE_PRICE_IDS;
+    const basePlan = plan === 'professional_plus' ? 'business' : plan;
+    const price = priceIds[basePlan];
     if (!price) return res.status(400).json({ error: 'Choose a valid HVACFlow plan.' });
+    if (plan === 'professional_plus' && testMode) return res.status(400).json({ error: 'Professional Plus checkout is configured for live mode only.' });
+
     params.set('mode', 'subscription');
     params.set('line_items[0][price]', price);
     params.set('line_items[0][quantity]', '1');
+    if (plan === 'professional_plus') {
+      params.set('line_items[1][price]', EXTRA_SEAT_PRICE_ID);
+      params.set('line_items[1][quantity]', '1');
+    }
     params.set('success_url', `${origin}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
     params.set('cancel_url', `${origin}/?checkout=cancelled`);
     params.set('allow_promotion_codes', 'true');
     params.set('metadata[plan]', plan);
+    if (plan === 'professional_plus') params.set('metadata[starting_users]', '16');
     params.set('customer_email', user.email);
   }
 
