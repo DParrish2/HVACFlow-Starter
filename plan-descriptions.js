@@ -19,16 +19,21 @@
     const plan=data.plan||null;
     const extra=Math.max(0,Number(data.extra_seats||0));
     const included=includedSeats(plan);
-    const total=included+extra;
+    const calculatedTotal=included+extra;
+    const total=Math.max(0,Number(data.seat_limit||calculatedTotal));
+    const used=Math.max(0,Number(data.member_count||0));
+    const available=Math.max(0,total-used);
     const status=data.test_account?'Test account':(data.cancel_at_period_end?'Cancels at period end':(data.status||'Active'));
     return `<div class="card" style="margin-top:16px">
       <h3 style="margin-top:0">Current subscription</h3>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px">
         <div><div class="sub" style="margin:0 0 4px">Plan</div><div style="font-size:24px;font-weight:800">${esc(planLabel(plan))}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Seats used</div><div style="font-size:24px;font-weight:800">${used} / ${total}</div><div style="font-size:13px;color:#667085">${available} available</div></div>
         <div><div class="sub" style="margin:0 0 4px">Subscription status</div><div style="font-size:18px;font-weight:700;text-transform:capitalize">${esc(status)}</div></div>
         <div><div class="sub" style="margin:0 0 4px">Included seats</div><div style="font-size:24px;font-weight:800">${included}</div></div>
         <div><div class="sub" style="margin:0 0 4px">Paid add-on seats</div><div style="font-size:24px;font-weight:800">${extra}</div></div>
         <div><div class="sub" style="margin:0 0 4px">Total seat capacity</div><div style="font-size:24px;font-weight:800">${total}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Seats available</div><div style="font-size:24px;font-weight:800">${available}</div></div>
         <div><div class="sub" style="margin:0 0 4px">Seat add-on cost</div><div style="font-size:24px;font-weight:800">$${(extra*8).toFixed(2)}<span style="font-size:13px;font-weight:400"> / month</span></div></div>
       </div>
     </div>`;
@@ -44,6 +49,18 @@
       const data=await response.json();
       if(!response.ok) throw new Error(data.error||'Subscription status could not be loaded.');
       if(data.member_role&&data.member_role!=='owner'){host.innerHTML='';return;}
+      if(data.active){
+        try{
+          const {data:teamRows,error:teamError}=await sb.rpc('hvacflow_team_summary');
+          if(!teamError){
+            const team=Array.isArray(teamRows)?teamRows[0]:teamRows;
+            if(team){
+              data.member_count=Number(team.member_count||0);
+              data.seat_limit=Number(team.seat_limit||0);
+            }
+          }
+        }catch(_e){}
+      }
       if(!data.active){
         host.innerHTML='<div class="card" style="margin-top:16px"><h3>Current subscription</h3><p class="sub" style="margin:0">No active HVACFlow subscription was found.</p></div>';
         return;
