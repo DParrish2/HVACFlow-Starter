@@ -7,6 +7,33 @@
     return Number.isNaN(d.getTime())?'':d.toLocaleDateString();
   }
 
+  function planLabel(plan){
+    return ({starter:'Starter',professional:'Professional',business:'Business'})[plan]||'Unknown';
+  }
+
+  function includedSeats(plan){
+    return ({starter:1,professional:5,business:15})[plan]||0;
+  }
+
+  function subscriptionSummary(data){
+    const plan=data.plan||null;
+    const extra=Math.max(0,Number(data.extra_seats||0));
+    const included=includedSeats(plan);
+    const total=included+extra;
+    const status=data.test_account?'Test account':(data.cancel_at_period_end?'Cancels at period end':(data.status||'Active'));
+    return `<div class="card" style="margin-top:16px">
+      <h3 style="margin-top:0">Current subscription</h3>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px">
+        <div><div class="sub" style="margin:0 0 4px">Plan</div><div style="font-size:24px;font-weight:800">${esc(planLabel(plan))}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Subscription status</div><div style="font-size:18px;font-weight:700;text-transform:capitalize">${esc(status)}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Included seats</div><div style="font-size:24px;font-weight:800">${included}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Paid add-on seats</div><div style="font-size:24px;font-weight:800">${extra}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Total seat capacity</div><div style="font-size:24px;font-weight:800">${total}</div></div>
+        <div><div class="sub" style="margin:0 0 4px">Seat add-on cost</div><div style="font-size:24px;font-weight:800">$${(extra*8).toFixed(2)}<span style="font-size:13px;font-weight:400"> / month</span></div></div>
+      </div>
+    </div>`;
+  }
+
   async function refreshSubscriptionManagement(){
     const host=document.getElementById('subscriptionManagement');
     if(!host||typeof sb==='undefined') return;
@@ -17,14 +44,21 @@
       const data=await response.json();
       if(!response.ok) throw new Error(data.error||'Subscription status could not be loaded.');
       if(data.member_role&&data.member_role!=='owner'){host.innerHTML='';return;}
-      if(data.test_account){host.innerHTML='<div class="card" style="margin-top:16px"><h3>Subscription management</h3><p class="sub" style="margin:0">Test accounts do not have a cancellable live subscription.</p></div>';return;}
-      if(!data.active){host.innerHTML='';return;}
+      if(!data.active){
+        host.innerHTML='<div class="card" style="margin-top:16px"><h3>Current subscription</h3><p class="sub" style="margin:0">No active HVACFlow subscription was found.</p></div>';
+        return;
+      }
+      const summary=subscriptionSummary(data);
+      if(data.test_account){
+        host.innerHTML=`${summary}<div class="card" style="margin-top:16px"><h3>Subscription management</h3><p class="sub" style="margin:0">Test accounts do not have a cancellable live subscription.</p></div>`;
+        return;
+      }
       const endDate=formatDate(data.current_period_end);
       if(data.cancel_at_period_end){
-        host.innerHTML=`<div class="card" style="margin-top:16px"><h3>Subscription cancellation scheduled</h3><p>Your HVACFlow access remains active${endDate?` through <strong>${esc(endDate)}</strong>`:''}. After that date, the subscription will end and you will not be billed for another period.</p><button class="btn secondary" id="resumeSubscription">Keep My Subscription</button><div id="subscriptionManageMsg"></div></div>`;
+        host.innerHTML=`${summary}<div class="card" style="margin-top:16px"><h3>Subscription cancellation scheduled</h3><p>Your HVACFlow access remains active${endDate?` through <strong>${esc(endDate)}</strong>`:''}. After that date, the subscription will end and you will not be billed for another period.</p><button class="btn secondary" id="resumeSubscription">Keep My Subscription</button><div id="subscriptionManageMsg"></div></div>`;
         document.getElementById('resumeSubscription').onclick=()=>manageSubscription('resume');
       }else{
-        host.innerHTML=`<div class="card" style="margin-top:16px"><h3>Manage subscription</h3><p class="sub">Need to stop your plan? You can cancel future renewal and keep access through the end of your current billing period.</p><button class="btn danger" id="cancelSubscription">Cancel Subscription</button><div id="subscriptionManageMsg"></div></div>`;
+        host.innerHTML=`${summary}<div class="card" style="margin-top:16px"><h3>Manage subscription</h3><p class="sub">Need to stop your plan? You can cancel future renewal and keep access through the end of your current billing period.</p><button class="btn danger" id="cancelSubscription">Cancel Subscription</button><div id="subscriptionManageMsg"></div></div>`;
         document.getElementById('cancelSubscription').onclick=()=>manageSubscription('cancel');
       }
     }catch(error){
@@ -44,7 +78,7 @@
       const response=await fetch('/api/manage-subscription',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({action})});
       const data=await response.json();
       if(!response.ok) throw new Error(data.error||'Subscription could not be updated.');
-      if(msg)msg.innerHTML=`<div class="msg ok">${action==='cancel'?'Cancellation scheduled. You will keep access until the end of the current billing period.':'Your subscription will continue renewing normally.'}</div>`;
+      if(msg)msg.innerHTML=`<div class="msg ok">${action==='cancel'?'Cancellation scheduled. You will keep access until the end of your current billing period.':'Your subscription will continue renewing normally.'}</div>`;
       setTimeout(refreshSubscriptionManagement,500);
     }catch(error){
       if(msg)msg.innerHTML=`<div class="msg err">${esc(error.message)}</div>`;
