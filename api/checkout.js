@@ -54,6 +54,12 @@ async function stripeGet(secretKey, path, query = {}) {
   return data;
 }
 
+async function findStripeCustomer(secretKey,email){
+  if(!email) return null;
+  const customers=await stripeGet(secretKey,'customers',{email,limit:10});
+  return (customers.data||[])[0]||null;
+}
+
 async function findActiveSubscription(secretKey, email) {
   if (!email) return null;
   const customers = await stripeGet(secretKey, 'customers', { email, limit: 10 });
@@ -123,6 +129,10 @@ module.exports = async function checkout(req, res) {
     const price = priceIds[plan];
     if (!price) return res.status(400).json({ error: 'Choose a valid HVACFlow plan.' });
 
+    let stripeCustomer=null;
+    try { stripeCustomer=await findStripeCustomer(secretKey,billingEmail); }
+    catch(error){ console.error('Stripe customer lookup failed',error.message); }
+
     params.set('mode', 'subscription');
     params.set('line_items[0][price]', price);
     params.set('line_items[0][quantity]', '1');
@@ -130,7 +140,15 @@ module.exports = async function checkout(req, res) {
     params.set('cancel_url', `${origin}/?checkout=cancelled`);
     params.set('allow_promotion_codes', 'true');
     params.set('metadata[plan]', plan);
-    params.set('customer_email', user.email);
+    params.set('billing_address_collection','required');
+    params.set('automatic_tax[enabled]','true');
+    if(stripeCustomer?.id){
+      params.set('customer',stripeCustomer.id);
+      params.set('customer_update[address]','auto');
+      params.set('customer_update[name]','auto');
+    }else{
+      params.set('customer_email', billingEmail);
+    }
   }
 
   params.set('client_reference_id', String(identity?.company_id || user.id).slice(0, 200));
@@ -146,7 +164,7 @@ module.exports = async function checkout(req, res) {
     const session = await stripeResponse.json();
     if (!stripeResponse.ok) {
       console.error('Stripe checkout error', session.error?.type, session.error?.code, session.error?.message);
-      return res.status(502).json({ error: 'Stripe checkout is temporarily unavailable.' });
+      return res.status(502).json({ error: session.error?.message || 'Stripe checkout is temporarily unavailable.' });
     }
     return res.status(200).json({ url: session.url });
   } catch (error) {
