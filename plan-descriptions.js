@@ -74,7 +74,8 @@
       card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAppointments();}};
     }
     const next=future[0];
-    upcoming.innerHTML=`<div style="font-size:34px;font-weight:800;color:#0d47a1;line-height:1">${appointments.length}</div><div style="color:#667085;margin-top:5px">Total appointments</div>${next?`<div style="margin-top:12px"><strong>Next:</strong> ${esc(next.customer_name||'Customer')} · ${new Date(next.scheduled_for).toLocaleString()}</div>`:'<div style="margin-top:12px;color:#667085">No upcoming appointments.</div>'}<div style="margin-top:10px;color:#0d47a1;font-weight:700">View appointments →</div>`;
+    const html=`<div style="font-size:34px;font-weight:800;color:#0d47a1;line-height:1">${appointments.length}</div><div style="color:#667085;margin-top:5px">Total appointments</div>${next?`<div style="margin-top:12px"><strong>Next:</strong> ${esc(next.customer_name||'Customer')} · ${new Date(next.scheduled_for).toLocaleString()}</div>`:'<div style="margin-top:12px;color:#667085">No upcoming appointments.</div>'}<div style="margin-top:10px;color:#0d47a1;font-weight:700">View appointments →</div>`;
+    if(upcoming.innerHTML!==html) upcoming.innerHTML=html;
   }
 
   function installDashboardAppointmentFix(){
@@ -142,9 +143,18 @@
     refreshDashboardAppointments();
   }
 
-  const observer=new MutationObserver(()=>{renderPlans();installDashboardAppointmentFix();});
-  observer.observe(document.body,{childList:true,subtree:true});
-  renderPlans();
-  installDashboardAppointmentFix();
-  if(typeof sb!=='undefined') sb.auth.onAuthStateChange(()=>setTimeout(()=>{refreshSubscriptionManagement();refreshDashboardAppointments();},200));
+  function initialize(){
+    renderPlans();
+    installDashboardAppointmentFix();
+    refreshDashboardAppointments();
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initialize,{once:true});
+  else initialize();
+
+  if(typeof sb!=='undefined') sb.auth.onAuthStateChange(()=>setTimeout(()=>{
+    renderPlans();
+    refreshSubscriptionManagement();
+    refreshDashboardAppointments();
+  },200));
 })();
