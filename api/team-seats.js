@@ -83,6 +83,11 @@ module.exports=async function teamSeats(req,res){
   if(!token) return res.status(401).json({error:'Please sign in again.'});
   const requested=Number.parseInt(req.body?.extra_seats,10);
   if(!Number.isInteger(requested)||requested<0) return res.status(400).json({error:'Enter a valid number of extra seats.'});
+  const billingState=String(req.body?.billing_state||'').trim().toUpperCase();
+  const billingZip=String(req.body?.billing_zip||'').trim();
+  if(requested>0 && !/^[A-Z]{2}$/.test(billingState)) return res.status(400).json({error:'Choose a 2-letter billing state for tax calculation.'});
+  if(requested>0 && !/^\d{5}(?:-\d{4})?$/.test(billingZip)) return res.status(400).json({error:'Enter a valid billing ZIP code for tax calculation.'});
+
   const secretKey=process.env.STRIPE_SECRET_KEY;
   if(!secretKey) return res.status(500).json({error:'Stripe is not configured yet.'});
   if(secretKey.startsWith('sk_test_')) return res.status(400).json({error:'Extra-seat billing is configured for live mode only.'});
@@ -105,6 +110,19 @@ module.exports=async function teamSeats(req,res){
       return res.status(400).json({error:'The requested seat quantity is too high.'});
     }
 
+    if(requested>0){
+      const customerId=typeof subscription.customer==='string'?subscription.customer:subscription.customer?.id;
+      if(!customerId) return res.status(400).json({error:'Stripe customer record could not be identified.'});
+      await stripeRequest(secretKey,`customers/${customerId}`,{method:'POST',params:{
+        'address[country]':'US',
+        'address[state]':billingState,
+        'address[postal_code]':billingZip,
+      }});
+      if(!subscription.automatic_tax?.enabled){
+        await stripeRequest(secretKey,`subscriptions/${subscription.id}`,{method:'POST',params:{'automatic_tax[enabled]':'true'}});
+      }
+    }
+
     const seatItem=(subscription.items?.data||[]).find(i=>i.price?.id===EXTRA_SEAT_PRICE_ID);
     if(requested===0 && seatItem){
       await stripeRequest(secretKey,`subscription_items/${seatItem.id}`,{method:'DELETE',params:{proration_behavior:'create_prorations'}});
@@ -123,6 +141,8 @@ module.exports=async function teamSeats(req,res){
       extra_seats:requested,
       total_seats:included+requested,
       monthly_extra_cost:requested*8,
+      billing_state:billingState||null,
+      billing_zip:billingZip||null,
       upgrade_recommended:(plan==='starter'&&included+requested>=4)?'professional':(plan==='professional'&&included+requested>=9)?'business':null,
     });
   }catch(error){
