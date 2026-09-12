@@ -112,6 +112,8 @@ module.exports = async function subscription(req, res) {
       plan: 'business',
       extra_seats: 0,
       test_account: true,
+      cancel_at_period_end: false,
+      current_period_end: null,
       company_id: identity?.company_id || null,
       member_role: identity?.member_role || null,
     });
@@ -123,7 +125,7 @@ module.exports = async function subscription(req, res) {
   try {
     const subscription = await findActiveSubscription(secretKey, billingEmail);
     if (!subscription) {
-      return res.status(200).json({ active: false, status: 'inactive', plan: null, extra_seats: 0, company_id: identity?.company_id || null, member_role: identity?.member_role || null });
+      return res.status(200).json({ active: false, status: 'inactive', plan: null, extra_seats: 0, cancel_at_period_end:false, current_period_end:null, company_id: identity?.company_id || null, member_role: identity?.member_role || null });
     }
     const details=subscriptionDetails(subscription);
     return res.status(200).json({
@@ -131,6 +133,7 @@ module.exports = async function subscription(req, res) {
       status: subscription.status,
       plan: details.plan,
       extra_seats: details.extraSeats,
+      cancel_at_period_end: !!subscription.cancel_at_period_end,
       current_period_end: subscription.current_period_end || null,
       company_id: identity?.company_id || null,
       member_role: identity?.member_role || null,
