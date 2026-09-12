@@ -52,6 +52,45 @@
     }
   }
 
+  function refreshDashboardAppointments(){
+    const upcoming=document.getElementById('upcoming');
+    const dashboard=document.getElementById('dashboard');
+    if(!upcoming||!dashboard||typeof cache==='undefined') return;
+    const appointments=Array.isArray(cache.Appointments)?cache.Appointments:[];
+    const now=new Date();
+    const future=appointments
+      .filter(a=>a.scheduled_for&&new Date(a.scheduled_for)>=now&&a.status!=='cancelled')
+      .sort((a,b)=>new Date(a.scheduled_for)-new Date(b.scheduled_for));
+    const card=upcoming.closest('.card');
+    if(card){
+      const heading=card.querySelector('h3');
+      if(heading) heading.textContent='Appointments';
+      card.style.cursor='pointer';
+      card.setAttribute('role','button');
+      card.setAttribute('tabindex','0');
+      card.title='Open Appointments';
+      const openAppointments=()=>document.querySelector('#nav button[data-page="appointments"]')?.click();
+      card.onclick=openAppointments;
+      card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAppointments();}};
+    }
+    const next=future[0];
+    upcoming.innerHTML=`<div style="font-size:34px;font-weight:800;color:#0d47a1;line-height:1">${appointments.length}</div><div style="color:#667085;margin-top:5px">Total appointments</div>${next?`<div style="margin-top:12px"><strong>Next:</strong> ${esc(next.customer_name||'Customer')} · ${new Date(next.scheduled_for).toLocaleString()}</div>`:'<div style="margin-top:12px;color:#667085">No upcoming appointments.</div>'}<div style="margin-top:10px;color:#0d47a1;font-weight:700">View appointments →</div>`;
+  }
+
+  function installDashboardAppointmentFix(){
+    if(window.__hvacflowDashboardAppointmentFix) return;
+    if(typeof window.loadDashboard!=='function') return;
+    window.__hvacflowDashboardAppointmentFix=true;
+    const originalLoadDashboard=window.loadDashboard;
+    window.loadDashboard=async function(...args){
+      const result=await originalLoadDashboard.apply(this,args);
+      refreshDashboardAppointments();
+      return result;
+    };
+    try{loadDashboard=window.loadDashboard}catch(_e){}
+    setTimeout(refreshDashboardAppointments,100);
+  }
+
   function renderPlans(){
     const billing=document.getElementById('billing');
     const plans=billing?.querySelector('.plans');
@@ -99,10 +138,13 @@
       style.textContent='@media(max-width:950px){#billing .plans{grid-template-columns:1fr!important}}';
       document.head.appendChild(style);
     }
+    installDashboardAppointmentFix();
+    refreshDashboardAppointments();
   }
 
-  const observer=new MutationObserver(renderPlans);
+  const observer=new MutationObserver(()=>{renderPlans();installDashboardAppointmentFix();});
   observer.observe(document.body,{childList:true,subtree:true});
   renderPlans();
-  if(typeof sb!=='undefined') sb.auth.onAuthStateChange(()=>setTimeout(refreshSubscriptionManagement,200));
+  installDashboardAppointmentFix();
+  if(typeof sb!=='undefined') sb.auth.onAuthStateChange(()=>setTimeout(()=>{refreshSubscriptionManagement();refreshDashboardAppointments();},200));
 })();
