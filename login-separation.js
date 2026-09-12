@@ -100,5 +100,24 @@
     },0));
   }
 
+  // Supabase can finish consuming a recovery URL before the main auth listener
+  // receives PASSWORD_RECOVERY. Detect the recovery marker in the URL as a
+  // fallback so password-reset links always open the new-password panel.
+  function recoveryLinkPresent(){
+    const hashParams=new URLSearchParams(location.hash.replace(/^#/,''));
+    const queryParams=new URLSearchParams(location.search);
+    return hashParams.get('type')==='recovery' || queryParams.get('type')==='recovery';
+  }
+
+  if(recoveryLinkPresent() && typeof showRecovery==='function'){
+    showRecovery();
+  }
+
+  if(typeof sb!=='undefined' && sb?.auth?.onAuthStateChange){
+    sb.auth.onAuthStateChange((event)=>{
+      if(event==='PASSWORD_RECOVERY' && typeof showRecovery==='function') showRecovery();
+    });
+  }
+
   ensureChoice();
 })();
