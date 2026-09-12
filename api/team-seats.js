@@ -1,6 +1,7 @@
 const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const EXTRA_SEAT_PRICE_ID = 'price_1UEQxXRzvI2im2M0FROnmKZn';
+const MANAGED_PAYMENTS_TAX_CODE = 'txcd_10103001';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active','trialing']);
 const PLAN_BY_PRICE = {
   price_1UEdXZRzvI2im2M0SgEbVpRS:'starter',
@@ -54,6 +55,16 @@ async function stripeRequest(secretKey,path,{method='GET',params={}}={}){
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(data.error?.message||'Stripe request failed.');
   return data;
+}
+
+async function ensureManagedPaymentsTaxCode(secretKey,priceId){
+  const price=await stripeRequest(secretKey,`prices/${priceId}`);
+  const productId=typeof price.product==='string'?price.product:price.product?.id;
+  if(!productId) throw new Error('Stripe seat product could not be identified.');
+  const product=await stripeRequest(secretKey,`products/${productId}`);
+  if(product.tax_code!==MANAGED_PAYMENTS_TAX_CODE){
+    await stripeRequest(secretKey,`products/${productId}`,{method:'POST',params:{tax_code:MANAGED_PAYMENTS_TAX_CODE}});
+  }
 }
 
 async function findSubscription(secretKey,email){
@@ -111,6 +122,7 @@ module.exports=async function teamSeats(req,res){
     }
 
     if(requested>0){
+      await ensureManagedPaymentsTaxCode(secretKey,EXTRA_SEAT_PRICE_ID);
       const customerId=typeof subscription.customer==='string'?subscription.customer:subscription.customer?.id;
       if(!customerId) return res.status(400).json({error:'Stripe customer record could not be identified.'});
       await stripeRequest(secretKey,`customers/${customerId}`,{method:'POST',params:{
