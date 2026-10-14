@@ -1,7 +1,6 @@
 const SUPABASE_URL='https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY='sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_STATUSES=new Set(['active','trialing']);
-const TEST_ACCOUNT_EMAILS=new Set(['david.parrish@libertyenergy.com','shedtoshelf@gmail.com']);
 
 function bearerFrom(req){
   const auth=String(req.headers.authorization||'');
@@ -71,7 +70,6 @@ module.exports=async function manageSubscription(req,res){
   if(identity?.member_role&&identity.member_role!=='owner') return res.status(403).json({error:'Only the account owner can manage the company subscription.'});
 
   const email=String(identity?.owner_email||user.email).toLowerCase();
-  if(TEST_ACCOUNT_EMAILS.has(email)) return res.status(400).json({error:'Test accounts do not have a cancellable live subscription.'});
 
   const action=String(req.body?.action||'').toLowerCase();
   if(!['cancel','resume'].includes(action)) return res.status(400).json({error:'Choose cancel or resume.'});
