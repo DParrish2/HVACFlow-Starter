@@ -1,7 +1,6 @@
 const SUPABASE_URL = 'https://ynavufmatbvqyzwmgxnb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_fSTVOqQUUXq1kOuZHYJdBg_qh4JtJPQ';
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing']);
-const TEST_ACCOUNT_EMAILS = new Set(['david.parrish@libertyenergy.com','shedtoshelf@gmail.com']);
 const EXTRA_SEAT_PRICE_ID = 'price_1UEQxXRzvI2im2M0FROnmKZn';
 
 const PLAN_BY_PRICE = {
@@ -105,20 +104,6 @@ module.exports = async function subscription(req, res) {
   if (!user?.id || !user?.email) return res.status(401).json({ error: 'Please sign in again.' });
 
   const billingEmail = String(identity?.owner_email || user.email).toLowerCase();
-  if (TEST_ACCOUNT_EMAILS.has(billingEmail)) {
-    return res.status(200).json({
-      active: true,
-      status: 'test_account',
-      plan: 'business',
-      extra_seats: 0,
-      test_account: true,
-      cancel_at_period_end: false,
-      current_period_end: null,
-      company_id: identity?.company_id || null,
-      member_role: identity?.member_role || null,
-    });
-  }
-
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) return res.status(500).json({ error: 'Stripe is not configured yet.' });
 
