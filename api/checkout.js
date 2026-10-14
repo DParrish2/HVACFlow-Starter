@@ -129,11 +129,34 @@ module.exports = async function checkout(req, res) {
     const price = priceIds[plan];
     if (!price) return res.status(400).json({ error: 'Choose a valid HVACFlow plan.' });
 
+    // Trials are available only to customers with no prior Stripe subscription.
+    // Never restart a trial or create a duplicate subscription for a paying customer.
     let stripeCustomer=null;
-    try { stripeCustomer=await findStripeCustomer(secretKey,billingEmail); }
-    catch(error){ console.error('Stripe customer lookup failed',error.message); }
+    let hasSubscriptionHistory=false;
+    try {
+      const customers=await stripeGet(secretKey,'customers',{email:billingEmail,limit:100});
+      stripeCustomer=(customers.data||[])[0]||null;
+      for(const existingCustomer of customers.data||[]){
+        const history=await stripeGet(secretKey,'subscriptions',{customer:existingCustomer.id,status:'all',limit:1});
+        if((history.data||[]).length){
+          hasSubscriptionHistory=true;
+          const active=await stripeGet(secretKey,'subscriptions',{customer:existingCustomer.id,status:'all',limit:100});
+          if((active.data||[]).some(sub=>ACTIVE_SUBSCRIPTION_STATUSES.has(sub.status))){
+            return res.status(409).json({error:'Your company already has an active subscription. Return to your dashboard instead of subscribing again.'});
+          }
+        }
+      }
+    } catch(error) {
+      console.error('Stripe subscription history lookup failed',error.message);
+      return res.status(503).json({error:'Unable to verify free-trial eligibility. Please try again.'});
+    }
 
     params.set('mode', 'subscription');
+    if(!hasSubscriptionHistory){
+      params.set('subscription_data[trial_period_days]','30');
+      params.set('subscription_data[trial_settings][end_behavior][missing_payment_method]','cancel');
+      params.set('payment_method_collection','always');
+    }
     params.set('line_items[0][price]', price);
     params.set('line_items[0][quantity]', '1');
     params.set('success_url', `${origin}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`);
